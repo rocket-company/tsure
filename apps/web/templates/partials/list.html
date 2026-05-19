@@ -1,0 +1,9 @@
+{{define "list"}}
+  {{if .Todos}}
+    {{range .Todos}}
+      {{template "todo" .}}
+    {{end}}
+  {{else}}
+    <li class="empty-state">No tasks yet. Add the first one above.</li>
+  {{end}}
+{{end}}

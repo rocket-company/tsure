@@ -1,0 +1,17 @@
+{{define "layout"}}
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="A To Do example based on HTMX and Go backed by PostgreSQL" />
+    <link rel="icon" href="/static/favicon.ico" type="image/png" />
+    <link rel="stylesheet" href="/static/style.css" />
+    <title>{{if .Title}}{{.Title}}{{else}}HTMX To Do{{end}}</title>
+    <script src="https://unpkg.com/htmx.org@2.0.6"></script>
+  </head>
+  <body>
+    {{template "content" .}}
+  </body>
+</html>
+{{end}}

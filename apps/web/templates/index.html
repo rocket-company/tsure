@@ -1,0 +1,50 @@
+{{define "index"}}{{template "layout" .}}{{end}}
+
+{{define "content"}}
+<main class="page">
+  <section class="hero">
+    <p class="eyebrow">HTMX + Go + PostgreSQL</p>
+    <h1>A To Do example</h1>
+    <p class="lede">
+      Server-rendered fragments, progressive enhancement, and a small
+      PostgreSQL-backed data layer.
+    </p>
+  </section>
+
+  <section class="card">
+    <form
+      id="new-todo"
+      class="composer"
+      hx-post="/todos"
+      hx-target="#todos-list"
+      hx-swap="beforeend"
+      hx-indicator=".htmx-indicator"
+      hx-on::after-request="event.target.reset()"
+    >
+      <input
+        type="text"
+        name="newToDo"
+        placeholder="What needs to be done?"
+        autocomplete="off"
+        required
+      />
+      <button type="submit">Add task</button>
+    </form>
+
+    <ul
+      id="todos-list"
+      class="todo-list"
+      hx-get="/todos"
+      hx-trigger="load"
+      hx-indicator=".htmx-indicator"
+    ></ul>
+
+    <div class="loading">
+      <span class="htmx-indicator">
+        <img src="/static/bars.svg" alt="" />
+        Loading tasks...
+      </span>
+    </div>
+  </section>
+</main>
+{{end}}
