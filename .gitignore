@@ -130,3 +130,11 @@ dist
 .pnp.*
 
 todos.db*
+
+# Android / Kotlin
+.gradle/
+local.properties
+*.iml
+captures/
+build/
+app/build/

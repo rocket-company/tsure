@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">tsure</string>
+    <string name="dashboard_eyebrow">tsure mobile | operacao de campo</string>
+    <string name="dashboard_title">Leasing e locacao de eventos no bolso.</string>
+    <string name="dashboard_subtitle">Template mobile inicial para equipe externa consultar OS, confirmar deslocamentos e registrar etapas operacionais.</string>
+    <string name="dashboard_ready_message">Base pronta para evoluir check-in, checklist de carga, fotos e apontamento de retorno.</string>
+    <string name="stats_title">Painel inicial</string>
+    <string name="stats_value">03 OS</string>
+    <string name="stats_caption">Fila simulada para demonstrar a estrutura do app nativo.</string>
+    <string name="primary_action">Marcar base como pronta</string>
+</resources>

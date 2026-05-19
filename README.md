@@ -10,6 +10,7 @@ inventario e financeiro em um fluxo unico de ordem de servico.
 .
 ├── apps/
 │   └── web/        # App web em Go com HTML server-side e HTMX
+│   └── mobile/     # Template Android nativo em Kotlin
 ├── database/       # Schema e seed SQL
 ├── docs/           # Escopo funcional, backlog, API e mapas de tela
 ├── docker-compose.yml
@@ -19,6 +20,9 @@ inventario e financeiro em um fluxo unico de ordem de servico.
 
 O frontend inicial usa HTML renderizado no servidor com HTMX para atualizacao
 progressiva do painel de ordens de servico.
+
+O monorepo agora tambem inclui uma base mobile Android em Kotlin para evoluir
+rotinas de campo, checklists, apontamento de equipe e consulta rapida de OS.
 
 ## Requirements
 
@@ -60,6 +64,20 @@ Open `http://127.0.0.1:3456`.
 
 Na primeira execucao, a aplicacao cria a tabela `service_orders` e injeta
 alguns registros de exemplo ligados ao dominio de eventos, frota e recebiveis.
+
+## Mobile
+
+O app Android base fica em `apps/mobile` e foi deixado propositalmente simples
+como template inicial. Ele abre uma dashboard estatica e uma CTA para futuras
+acoes de campo.
+
+Arquivos principais:
+
+- `apps/mobile/settings.gradle.kts`
+- `apps/mobile/app/build.gradle.kts`
+- `apps/mobile/app/src/main/java/com/tsure/mobile/MainActivity.kt`
+
+Para abrir no Android Studio, importe a pasta `apps/mobile`.
 
 ## Escopo de Produto
 
