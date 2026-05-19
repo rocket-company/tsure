@@ -1,0 +1,1475 @@
+openapi: 3.0.3
+info:
+  title: ERP de Locacoes e Leasing de Projetos
+  version: 1.0.0
+  description: >
+    API para operacao comercial, financeira, fiscal e operacional do ERP de
+    locacoes e leasing de projetos.
+servers:
+  - url: https://api.exemplo.local
+    description: Ambiente local
+tags:
+  - name: Auth
+  - name: Clientes
+  - name: Orcamentos
+  - name: OrdensServico
+  - name: Financeiro
+  - name: Fiscal
+  - name: Funcionarios
+  - name: Frota
+  - name: Inventario
+  - name: Ponto
+  - name: Localizacoes
+  - name: Administracao
+security:
+  - bearerAuth: []
+paths:
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Autenticar usuario
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Autenticacao realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+  /auth/logout:
+    post:
+      tags: [Auth]
+      summary: Encerrar sessao
+      responses:
+        '200':
+          description: Sessao encerrada
+  /auth/me:
+    get:
+      tags: [Auth]
+      summary: Dados do usuario autenticado
+      responses:
+        '200':
+          description: Usuario autenticado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+  /clientes:
+    get:
+      tags: [Clientes]
+      summary: Listar clientes
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+        - $ref: '#/components/parameters/Search'
+      responses:
+        '200':
+          description: Lista paginada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedClientes'
+    post:
+      tags: [Clientes]
+      summary: Criar cliente
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClienteInput'
+      responses:
+        '201':
+          description: Cliente criado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClienteResponse'
+  /clientes/{id}:
+    get:
+      tags: [Clientes]
+      summary: Detalhar cliente
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          description: Cliente encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClienteResponse'
+    put:
+      tags: [Clientes]
+      summary: Atualizar cliente
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClienteInput'
+      responses:
+        '200':
+          description: Cliente atualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClienteResponse'
+    delete:
+      tags: [Clientes]
+      summary: Remover cliente
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '204':
+          description: Cliente removido
+  /orcamentos:
+    get:
+      tags: [Orcamentos]
+      summary: Listar orcamentos
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+        - $ref: '#/components/parameters/Status'
+        - $ref: '#/components/parameters/ClienteId'
+      responses:
+        '200':
+          description: Lista paginada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedOrcamentos'
+    post:
+      tags: [Orcamentos]
+      summary: Criar orcamento
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrcamentoInput'
+      responses:
+        '201':
+          description: Orcamento criado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrcamentoResponse'
+  /orcamentos/{id}:
+    get:
+      tags: [Orcamentos]
+      summary: Detalhar orcamento
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          description: Orcamento encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrcamentoResponse'
+    put:
+      tags: [Orcamentos]
+      summary: Atualizar orcamento
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrcamentoInput'
+      responses:
+        '200':
+          description: Orcamento atualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrcamentoResponse'
+  /orcamentos/{id}/aprovar:
+    post:
+      tags: [Orcamentos]
+      summary: Aprovar orcamento
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApprovalInput'
+      responses:
+        '200':
+          description: Orcamento aprovado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrcamentoResponse'
+  /orcamentos/{id}/reprovar:
+    post:
+      tags: [Orcamentos]
+      summary: Reprovar orcamento
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApprovalRejectInput'
+      responses:
+        '200':
+          description: Orcamento reprovado
+  /orcamentos/{id}/converter-os:
+    post:
+      tags: [Orcamentos]
+      summary: Converter orcamento em ordem de servico
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '201':
+          description: Ordem de servico criada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrdemServicoResponse'
+  /ordens-servico:
+    get:
+      tags: [OrdensServico]
+      summary: Listar ordens de servico
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+        - $ref: '#/components/parameters/Status'
+        - $ref: '#/components/parameters/ClienteId'
+      responses:
+        '200':
+          description: Lista paginada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedOrdensServico'
+    post:
+      tags: [OrdensServico]
+      summary: Criar ordem de servico
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrdemServicoInput'
+      responses:
+        '201':
+          description: Ordem criada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrdemServicoResponse'
+  /ordens-servico/{id}:
+    get:
+      tags: [OrdensServico]
+      summary: Detalhar ordem de servico
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          description: Ordem encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrdemServicoResponse'
+    put:
+      tags: [OrdensServico]
+      summary: Atualizar ordem de servico
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrdemServicoInput'
+      responses:
+        '200':
+          description: Ordem atualizada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrdemServicoResponse'
+  /ordens-servico/{id}/agendar:
+    post:
+      tags: [OrdensServico]
+      summary: Agendar ordem de servico
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AgendaInput'
+      responses:
+        '200':
+          description: Ordem agendada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrdemServicoResponse'
+  /ordens-servico/{id}/instalar:
+    post:
+      tags: [OrdensServico]
+      summary: Registrar instalacao
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExecucaoInput'
+      responses:
+        '200':
+          description: Instalacao registrada
+  /ordens-servico/{id}/retirar:
+    post:
+      tags: [OrdensServico]
+      summary: Registrar retirada
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RetiradaInput'
+      responses:
+        '200':
+          description: Retirada registrada
+  /ordens-servico/{id}/finalizar:
+    post:
+      tags: [OrdensServico]
+      summary: Finalizar ordem de servico
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          description: Ordem finalizada
+  /ordens-servico/{id}/cancelar:
+    post:
+      tags: [OrdensServico]
+      summary: Cancelar ordem de servico
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CancelInput'
+      responses:
+        '200':
+          description: Ordem cancelada
+  /financeiro/contas-receber:
+    get:
+      tags: [Financeiro]
+      summary: Listar contas a receber
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+        - $ref: '#/components/parameters/Status'
+      responses:
+        '200':
+          description: Lista de titulos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedContasReceber'
+    post:
+      tags: [Financeiro]
+      summary: Criar conta a receber
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ContaReceberInput'
+      responses:
+        '201':
+          description: Titulo criado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContaReceberResponse'
+  /financeiro/contas-receber/{id}/baixar:
+    post:
+      tags: [Financeiro]
+      summary: Baixar conta a receber
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BaixaInput'
+      responses:
+        '200':
+          description: Baixa registrada
+  /fiscal/documentos:
+    get:
+      tags: [Fiscal]
+      summary: Listar documentos fiscais
+      responses:
+        '200':
+          description: Lista de documentos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedDocumentosFiscais'
+    post:
+      tags: [Fiscal]
+      summary: Criar documento fiscal
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DocumentoFiscalInput'
+      responses:
+        '201':
+          description: Documento criado
+  /fiscal/documentos/{id}/cancelar:
+    post:
+      tags: [Fiscal]
+      summary: Cancelar documento fiscal
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CancelFiscalInput'
+      responses:
+        '200':
+          description: Documento cancelado
+  /funcionarios:
+    get:
+      tags: [Funcionarios]
+      summary: Listar funcionarios
+      responses:
+        '200':
+          description: Lista de funcionarios
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedFuncionarios'
+    post:
+      tags: [Funcionarios]
+      summary: Criar funcionario
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FuncionarioInput'
+      responses:
+        '201':
+          description: Funcionario criado
+  /veiculos:
+    get:
+      tags: [Frota]
+      summary: Listar veiculos
+      responses:
+        '200':
+          description: Lista de veiculos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedVeiculos'
+    post:
+      tags: [Frota]
+      summary: Criar veiculo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VeiculoInput'
+      responses:
+        '201':
+          description: Veiculo criado
+  /inventario/equipamentos:
+    get:
+      tags: [Inventario]
+      summary: Listar equipamentos
+      responses:
+        '200':
+          description: Lista de equipamentos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedEquipamentos'
+    post:
+      tags: [Inventario]
+      summary: Criar equipamento
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EquipamentoInput'
+      responses:
+        '201':
+          description: Equipamento criado
+  /inventario/movimentacoes:
+    post:
+      tags: [Inventario]
+      summary: Registrar movimentacao de estoque
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MovimentacaoEstoqueInput'
+      responses:
+        '201':
+          description: Movimentacao criada
+  /ponto:
+    post:
+      tags: [Ponto]
+      summary: Registrar ponto
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PontoInput'
+      responses:
+        '201':
+          description: Ponto registrado
+    get:
+      tags: [Ponto]
+      summary: Listar pontos
+      responses:
+        '200':
+          description: Lista de pontos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPontos'
+  /localizacoes:
+    post:
+      tags: [Localizacoes]
+      summary: Registrar localizacao
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LocalizacaoInput'
+      responses:
+        '201':
+          description: Localizacao registrada
+    get:
+      tags: [Localizacoes]
+      summary: Listar localizacoes
+      responses:
+        '200':
+          description: Lista de localizacoes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedLocalizacoes'
+  /usuarios:
+    get:
+      tags: [Administracao]
+      summary: Listar usuarios
+      responses:
+        '200':
+          description: Lista de usuarios
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedUsuarios'
+    post:
+      tags: [Administracao]
+      summary: Criar usuario
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserInput'
+      responses:
+        '201':
+          description: Usuario criado
+  /perfis:
+    get:
+      tags: [Administracao]
+      summary: Listar perfis
+      responses:
+        '200':
+          description: Lista de perfis
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPerfis'
+    post:
+      tags: [Administracao]
+      summary: Criar perfil
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PerfilInput'
+      responses:
+        '201':
+          description: Perfil criado
+  /auditoria:
+    get:
+      tags: [Administracao]
+      summary: Consultar logs de auditoria
+      responses:
+        '200':
+          description: Lista de logs
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedLogsAuditoria'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    Id:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+        example: 1
+    Page:
+      name: page
+      in: query
+      schema:
+        type: integer
+        default: 1
+    PerPage:
+      name: per_page
+      in: query
+      schema:
+        type: integer
+        default: 20
+    Search:
+      name: search
+      in: query
+      schema:
+        type: string
+    Status:
+      name: status
+      in: query
+      schema:
+        type: string
+    ClienteId:
+      name: cliente_id
+      in: query
+      schema:
+        type: integer
+  schemas:
+    ApiResponse:
+      type: object
+      properties:
+        data:
+          nullable: true
+        message:
+          type: string
+        errors:
+          type: array
+          items:
+            type: string
+    PaginationMeta:
+      type: object
+      properties:
+        page:
+          type: integer
+        per_page:
+          type: integer
+        total:
+          type: integer
+    LoginRequest:
+      type: object
+      required: [login, password]
+      properties:
+        login:
+          type: string
+        password:
+          type: string
+      example:
+        login: admin
+        password: secret
+    AuthResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            access_token:
+              type: string
+            token_type:
+              type: string
+              example: Bearer
+            user:
+              $ref: '#/components/schemas/User'
+        message:
+          type: string
+        errors:
+          type: array
+          items:
+            type: string
+    UserResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/User'
+        message:
+          type: string
+        errors:
+          type: array
+          items:
+            type: string
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        nome:
+          type: string
+        login:
+          type: string
+        email:
+          type: string
+        status:
+          type: string
+        perfil_id:
+          type: integer
+    ClienteInput:
+      type: object
+      required: [razao_social, documento]
+      properties:
+        razao_social:
+          type: string
+        nome_fantasia:
+          type: string
+        tipo_pessoa:
+          type: string
+          enum: [fisica, juridica]
+        documento:
+          type: string
+        telefone:
+          type: string
+        email:
+          type: string
+        observacoes:
+          type: string
+      example:
+        razao_social: Empresa Exemplo LTDA
+        nome_fantasia: Empresa Exemplo
+        tipo_pessoa: juridica
+        documento: 00.000.000/0001-00
+        telefone: '(65) 99999-9999'
+        email: contato@exemplo.com
+    Cliente:
+      type: object
+      properties:
+        id:
+          type: integer
+        razao_social:
+          type: string
+        nome_fantasia:
+          type: string
+        tipo_pessoa:
+          type: string
+        documento:
+          type: string
+        telefone:
+          type: string
+        email:
+          type: string
+        status:
+          type: string
+        observacoes:
+          type: string
+    ClienteResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/Cliente'
+        message:
+          type: string
+        errors:
+          type: array
+          items:
+            type: string
+    PaginatedClientes:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Cliente'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+    OrcamentoInput:
+      type: object
+      required: [cliente_id, responsavel_comercial_id, validade, itens]
+      properties:
+        cliente_id:
+          type: integer
+        responsavel_comercial_id:
+          type: integer
+        validade:
+          type: string
+          format: date
+        tipo_evento:
+          type: string
+        forma_pagamento:
+          type: string
+        observacoes:
+          type: string
+        itens:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrcamentoItemInput'
+    OrcamentoItemInput:
+      type: object
+      required: [tipo_item, descricao, quantidade, valor_unitario]
+      properties:
+        tipo_item:
+          type: string
+        item_id:
+          type: integer
+          nullable: true
+        descricao:
+          type: string
+        quantidade:
+          type: number
+        valor_unitario:
+          type: number
+    Orcamento:
+      type: object
+      properties:
+        id:
+          type: integer
+        cliente_id:
+          type: integer
+        responsavel_comercial_id:
+          type: integer
+        numero:
+          type: string
+        status:
+          type: string
+        validade:
+          type: string
+          format: date
+        valor_total:
+          type: number
+        observacoes:
+          type: string
+    OrcamentoResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/Orcamento'
+        message:
+          type: string
+        errors:
+          type: array
+          items:
+            type: string
+    PaginatedOrcamentos:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Orcamento'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+    ApprovalInput:
+      type: object
+      properties:
+        observacoes:
+          type: string
+    ApprovalRejectInput:
+      type: object
+      required: [motivo]
+      properties:
+        motivo:
+          type: string
+    OrdemServicoInput:
+      type: object
+      required: [cliente_id, data_agendada]
+      properties:
+        orcamento_id:
+          type: integer
+        cliente_id:
+          type: integer
+        tipo_evento:
+          type: string
+        data_agendada:
+          type: string
+          format: date
+        hora_evento:
+          type: string
+          format: time
+        data_instalacao:
+          type: string
+          format: date
+        data_prevista_retorno:
+          type: string
+          format: date
+        responsavel_operacional_id:
+          type: integer
+        forma_pagamento:
+          type: string
+        observacoes:
+          type: string
+    OrdemServico:
+      type: object
+      properties:
+        id:
+          type: integer
+        orcamento_id:
+          type: integer
+        cliente_id:
+          type: integer
+        numero:
+          type: string
+        status:
+          type: string
+        data_agendada:
+          type: string
+          format: date
+        data_instalacao:
+          type: string
+          format: date
+        data_prevista_retorno:
+          type: string
+          format: date
+        saldo:
+          type: number
+        observacoes:
+          type: string
+    OrdemServicoResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/OrdemServico'
+        message:
+          type: string
+        errors:
+          type: array
+          items:
+            type: string
+    PaginatedOrdensServico:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrdemServico'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+    AgendaInput:
+      type: object
+      required: [data_inicio, data_fim]
+      properties:
+        data_inicio:
+          type: string
+          format: date-time
+        data_fim:
+          type: string
+          format: date-time
+        observacoes:
+          type: string
+    ExecucaoInput:
+      type: object
+      properties:
+        observacoes:
+          type: string
+        anexos:
+          type: array
+          items:
+            type: string
+    RetiradaInput:
+      type: object
+      properties:
+        tipo_retirada:
+          type: string
+        data_retirada:
+          type: string
+          format: date-time
+        km_saida:
+          type: number
+        km_retorno:
+          type: number
+        observacoes:
+          type: string
+    CancelInput:
+      type: object
+      required: [motivo]
+      properties:
+        motivo:
+          type: string
+    ContaReceberInput:
+      type: object
+      required: [cliente_id, valor_original, data_vencimento]
+      properties:
+        ordem_servico_id:
+          type: integer
+        cliente_id:
+          type: integer
+        numero_titulo:
+          type: string
+        competencia:
+          type: string
+          format: date
+        data_emissao:
+          type: string
+          format: date
+        data_vencimento:
+          type: string
+          format: date
+        valor_original:
+          type: number
+        observacoes:
+          type: string
+    ContaReceber:
+      type: object
+      properties:
+        id:
+          type: integer
+        cliente_id:
+          type: integer
+        ordem_servico_id:
+          type: integer
+        numero_titulo:
+          type: string
+        saldo:
+          type: number
+        status:
+          type: string
+        data_vencimento:
+          type: string
+          format: date
+    ContaReceberResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/ContaReceber'
+        message:
+          type: string
+        errors:
+          type: array
+          items:
+            type: string
+    PaginatedContasReceber:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ContaReceber'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+    BaixaInput:
+      type: object
+      required: [data_recebimento, valor_recebido, meio_pagamento]
+      properties:
+        data_recebimento:
+          type: string
+          format: date
+        valor_recebido:
+          type: number
+        meio_pagamento:
+          type: string
+        referencia:
+          type: string
+        observacoes:
+          type: string
+    DocumentoFiscalInput:
+      type: object
+      required: [ordem_servico_id, cliente_id]
+      properties:
+        ordem_servico_id:
+          type: integer
+        cliente_id:
+          type: integer
+        tipo_documento:
+          type: string
+        data_emissao:
+          type: string
+          format: date
+        valor_total:
+          type: number
+        observacoes:
+          type: string
+    CancelFiscalInput:
+      type: object
+      required: [motivo]
+      properties:
+        motivo:
+          type: string
+    PaginatedDocumentosFiscais:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/DocumentoFiscal'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+    DocumentoFiscal:
+      type: object
+      properties:
+        id:
+          type: integer
+        ordem_servico_id:
+          type: integer
+        cliente_id:
+          type: integer
+        numero:
+          type: string
+        tipo_documento:
+          type: string
+        status:
+          type: string
+        data_emissao:
+          type: string
+          format: date
+        valor_total:
+          type: number
+    FuncionarioInput:
+      type: object
+      required: [nome]
+      properties:
+        nome:
+          type: string
+        documento:
+          type: string
+        cargo:
+          type: string
+        funcao:
+          type: string
+        telefone:
+          type: string
+        email:
+          type: string
+        status:
+          type: string
+    Funcionario:
+      type: object
+      properties:
+        id:
+          type: integer
+        nome:
+          type: string
+        cargo:
+          type: string
+        funcao:
+          type: string
+        status:
+          type: string
+    PaginatedFuncionarios:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Funcionario'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+    VeiculoInput:
+      type: object
+      required: [placa, modelo]
+      properties:
+        placa:
+          type: string
+        modelo:
+          type: string
+        marca:
+          type: string
+        ano:
+          type: integer
+        cor:
+          type: string
+        km_atual:
+          type: number
+        status:
+          type: string
+    Veiculo:
+      type: object
+      properties:
+        id:
+          type: integer
+        placa:
+          type: string
+        modelo:
+          type: string
+        marca:
+          type: string
+        status:
+          type: string
+        km_atual:
+          type: number
+    PaginatedVeiculos:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Veiculo'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+    EquipamentoInput:
+      type: object
+      required: [nome]
+      properties:
+        codigo_patrimonio:
+          type: string
+        nome:
+          type: string
+        descricao:
+          type: string
+        categoria:
+          type: string
+        quantidade_total:
+          type: number
+        quantidade_disponivel:
+          type: number
+        status:
+          type: string
+    Equipamento:
+      type: object
+      properties:
+        id:
+          type: integer
+        codigo_patrimonio:
+          type: string
+        nome:
+          type: string
+        categoria:
+          type: string
+        quantidade_total:
+          type: number
+        quantidade_disponivel:
+          type: number
+        status:
+          type: string
+    PaginatedEquipamentos:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Equipamento'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+    MovimentacaoEstoqueInput:
+      type: object
+      required: [equipamento_id, tipo_movimentacao, quantidade]
+      properties:
+        equipamento_id:
+          type: integer
+        kit_id:
+          type: integer
+          nullable: true
+        ordem_servico_id:
+          type: integer
+          nullable: true
+        tipo_movimentacao:
+          type: string
+        quantidade:
+          type: number
+        origem:
+          type: string
+        destino:
+          type: string
+        observacoes:
+          type: string
+    PontoInput:
+      type: object
+      required: [funcionario_id, data_ponto]
+      properties:
+        funcionario_id:
+          type: integer
+        ordem_servico_id:
+          type: integer
+        data_ponto:
+          type: string
+          format: date
+        hora_entrada:
+          type: string
+          format: time
+        hora_saida:
+          type: string
+          format: time
+        observacoes:
+          type: string
+    Ponto:
+      type: object
+      properties:
+        id:
+          type: integer
+        funcionario_id:
+          type: integer
+        ordem_servico_id:
+          type: integer
+        data_ponto:
+          type: string
+          format: date
+        hora_entrada:
+          type: string
+          format: time
+        hora_saida:
+          type: string
+          format: time
+    PaginatedPontos:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Ponto'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+    LocalizacaoInput:
+      type: object
+      required: [funcionario_id, data_localizacao]
+      properties:
+        funcionario_id:
+          type: integer
+        ordem_servico_id:
+          type: integer
+        latitude:
+          type: number
+        longitude:
+          type: number
+        endereco_texto:
+          type: string
+        data_localizacao:
+          type: string
+          format: date-time
+        origem:
+          type: string
+    Localizacao:
+      type: object
+      properties:
+        id:
+          type: integer
+        funcionario_id:
+          type: integer
+        ordem_servico_id:
+          type: integer
+        latitude:
+          type: number
+        longitude:
+          type: number
+        data_localizacao:
+          type: string
+          format: date-time
+    PaginatedLocalizacoes:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Localizacao'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+    UserInput:
+      type: object
+      required: [nome, login, email, perfil_id]
+      properties:
+        nome:
+          type: string
+        login:
+          type: string
+        email:
+          type: string
+        senha:
+          type: string
+        perfil_id:
+          type: integer
+        status:
+          type: string
+    PerfilInput:
+      type: object
+      required: [nome]
+      properties:
+        nome:
+          type: string
+        descricao:
+          type: string
+        status:
+          type: string
+    Perfil:
+      type: object
+      properties:
+        id:
+          type: integer
+        nome:
+          type: string
+        descricao:
+          type: string
+        status:
+          type: string
+    PaginatedPerfis:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Perfil'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+    PaginatedUsuarios:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+    PaginatedLogsAuditoria:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+              usuario_id:
+                type: integer
+              entidade:
+                type: string
+              acao:
+                type: string
+              data_evento:
+                type: string
+                format: date-time
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'

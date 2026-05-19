@@ -1,9 +1,44 @@
-{{define "list"}}
-  {{if .Todos}}
-    {{range .Todos}}
-      {{template "todo" .}}
-    {{end}}
-  {{else}}
-    <li class="empty-state">No tasks yet. Add the first one above.</li>
-  {{end}}
+{{define "orders-panel"}}
+  <section class="summary-grid">
+    <article class="metric-card">
+      <span class="metric-label">Ordens abertas</span>
+      <strong>{{.Summary.TotalOrders}}</strong>
+      <p>Pipeline comercial e operacional visivel num unico quadro.</p>
+    </article>
+    <article class="metric-card">
+      <span class="metric-label">Em campo</span>
+      <strong>{{.Summary.OrdersInField}}</strong>
+      <p>OS em execucao ou aguardando retorno de material.</p>
+    </article>
+    <article class="metric-card">
+      <span class="metric-label">Frota reservada</span>
+      <strong>{{.Summary.VehiclesReserved}}</strong>
+      <p>Veiculos comprometidos com agenda ativa.</p>
+    </article>
+    <article class="metric-card metric-card--money">
+      <span class="metric-label">Recebiveis em aberto</span>
+      <strong>{{formatMoney .Summary.OpenReceivables}}</strong>
+      <p>Saldo pendente do que ja esta proposto ou contratado.</p>
+    </article>
+  </section>
+
+  <section class="table-card">
+    <div class="table-head">
+      <div>
+        <p class="section-kicker">Painel operacional</p>
+        <h2>Ordens de servico</h2>
+      </div>
+      <p class="table-note">Clique em "Avancar status" para mover a OS pelo fluxo operacional.</p>
+    </div>
+
+    <ul class="order-list">
+      {{if .Orders}}
+        {{range .Orders}}
+          {{template "order" .}}
+        {{end}}
+      {{else}}
+        <li class="empty-state">Nenhuma OS cadastrada ainda. Use o formulario acima para iniciar a operacao.</li>
+      {{end}}
+    </ul>
+  </section>
 {{end}}

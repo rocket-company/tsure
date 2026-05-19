@@ -1,27 +1,59 @@
-{{define "todo"}}
-<li class="todo-item{{if .Done}} is-done{{end}}">
-  <label class="todo-check" for="todo-{{.ID}}">
-    <input
-      id="todo-{{.ID}}"
-      type="checkbox"
-      {{if .Done}}checked{{end}}
-      hx-put="/todos/{{.ID}}"
-      hx-trigger="change"
-      hx-target="closest li"
-      hx-swap="outerHTML"
-      hx-indicator=".htmx-indicator"
-    />
-    <span>{{.Title}}</span>
-  </label>
+{{define "order"}}
+<li class="order-item status-{{.Status}}">
+  <div class="order-main">
+    <div class="order-head">
+      <div>
+        <p class="order-code">{{.Code}}</p>
+        <h3>{{.EventName}}</h3>
+      </div>
+      <span class="status-pill">{{statusLabel .Status}}</span>
+    </div>
 
-  <button
-    type="button"
-    class="delete"
-    hx-delete="/todos/{{.ID}}"
-    hx-target="closest li"
-    hx-swap="outerHTML"
-  >
-    Delete
-  </button>
+    <p class="order-customer">{{.CustomerName}} · {{.EventCity}} · {{formatDate .EventDate}}</p>
+    <p class="order-inventory">{{.InventorySummary}}</p>
+
+    <dl class="order-meta">
+      <div>
+        <dt>Frota</dt>
+        <dd>{{.VehicleLabel}}</dd>
+      </div>
+      <div>
+        <dt>Equipe</dt>
+        <dd>{{.CrewSize}} tecnicos</dd>
+      </div>
+      <div>
+        <dt>Contrato</dt>
+        <dd>{{formatMoney .TotalAmount}}</dd>
+      </div>
+      <div>
+        <dt>Saldo</dt>
+        <dd>{{formatMoney .BalanceDue}}</dd>
+      </div>
+    </dl>
+  </div>
+
+  <div class="order-actions">
+    <button
+      type="button"
+      class="advance"
+      hx-put="/orders/{{.ID}}"
+      hx-target="#operations-panel"
+      hx-swap="innerHTML"
+      hx-indicator=".htmx-indicator"
+    >
+      Avancar para {{nextStatusLabel .Status}}
+    </button>
+
+    <button
+      type="button"
+      class="delete"
+      hx-delete="/orders/{{.ID}}"
+      hx-target="#operations-panel"
+      hx-swap="innerHTML"
+      hx-indicator=".htmx-indicator"
+    >
+      Excluir OS
+    </button>
+  </div>
 </li>
 {{end}}

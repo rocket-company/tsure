@@ -1,13 +1,16 @@
 {{define "layout"}}
 <!doctype html>
-<html lang="en">
+<html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="description" content="A To Do example based on HTMX and Go backed by PostgreSQL" />
+    <meta
+      name="description"
+      content="tsure e um ERP para leasing e locacao de materiais para eventos com operacao, frota e financeiro."
+    />
     <link rel="icon" href="/static/favicon.ico" type="image/png" />
     <link rel="stylesheet" href="/static/style.css" />
-    <title>{{if .Title}}{{.Title}}{{else}}HTMX To Do{{end}}</title>
+    <title>{{if .Title}}{{.Title}}{{else}}tsure{{end}}</title>
     <script src="https://unpkg.com/htmx.org@2.0.6"></script>
   </head>
   <body>

@@ -1,4 +1,4 @@
-module htmx-go-pgsql-todo
+module tsure
 
 go 1.22
 

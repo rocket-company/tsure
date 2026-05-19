@@ -8,6 +8,7 @@ import (
 	"html/template"
 	"io/fs"
 	"log"
+	"math"
 	"net/http"
 	"os"
 	"path"
@@ -17,18 +18,27 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"htmx-go-pgsql-todo/apps/web/internal/todo"
+	"tsure/apps/web/internal/orders"
 )
 
 //go:embed templates/*.html templates/partials/*.html public/*
 var embeddedAssets embed.FS
 
 type pageData struct {
-	Title string
+	Title           string
+	Today           string
+	DefaultDate     string
+	DefaultVehicle  string
+	DefaultCrewSize int
+}
+
+type dashboardData struct {
+	Orders  []orders.ServiceOrder
+	Summary orders.DashboardSummary
 }
 
 type app struct {
-	store     *todo.Store
+	store     *orders.Store
 	templates *template.Template
 }
 
@@ -48,12 +58,17 @@ func main() {
 		log.Fatalf("ping postgres: %v", err)
 	}
 
-	store := todo.NewStore(pool)
+	store := orders.NewStore(pool)
 	if err := store.Init(ctx); err != nil {
 		log.Fatalf("init store: %v", err)
 	}
 
-	tmpl := template.Must(template.New("").ParseFS(
+	tmpl := template.Must(template.New("").Funcs(template.FuncMap{
+		"formatMoney":     formatMoneyBRL,
+		"formatDate":      formatDateBR,
+		"statusLabel":     orders.StatusLabel,
+		"nextStatusLabel": orders.NextStatusLabel,
+	}).ParseFS(
 		embeddedAssets,
 		"templates/*.html",
 		"templates/partials/*.html",
@@ -66,8 +81,8 @@ func main() {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", a.handleIndex)
-	mux.HandleFunc("/todos", a.handleTodos)
-	mux.HandleFunc("/todos/", a.handleTodoByID)
+	mux.HandleFunc("/orders", a.handleOrders)
+	mux.HandleFunc("/orders/", a.handleOrderByID)
 
 	staticFS, err := fs.Sub(embeddedAssets, "public")
 	if err != nil {
@@ -102,7 +117,7 @@ func configFromEnv() config {
 
 	dbURL := strings.TrimSpace(os.Getenv("DATABASE_URL"))
 	if dbURL == "" {
-		dbURL = "postgres://todos:todos@127.0.0.1:5432/todos?sslmode=disable"
+		dbURL = "postgres://tsure:tsure@127.0.0.1:5432/tsure?sslmode=disable"
 	}
 
 	return config{
@@ -121,42 +136,53 @@ func (a *app) handleIndex(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	a.render(w, "index", pageData{Title: "HTMX To Do"})
+	now := time.Now()
+	a.render(w, "index", pageData{
+		Title:           "tsure | ERP de leasing para eventos",
+		Today:           now.Format("02 Jan 2006"),
+		DefaultDate:     now.Add(48 * time.Hour).Format("2006-01-02"),
+		DefaultVehicle:  "Van Operacional - Placa TST-1001",
+		DefaultCrewSize: 4,
+	})
 }
 
-func (a *app) handleTodos(w http.ResponseWriter, r *http.Request) {
+func (a *app) handleOrders(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
-		todos, err := a.store.List(r.Context())
-		if err != nil {
-			a.internalError(w, err)
-			return
-		}
-
-		a.render(w, "list", struct {
-			Todos []todo.Item
-		}{Todos: todos})
+		a.renderOrdersPanel(w, r)
 	case http.MethodPost:
 		if err := r.ParseForm(); err != nil {
 			http.Error(w, "invalid form data", http.StatusBadRequest)
 			return
 		}
 
-		title := strings.TrimSpace(r.FormValue("newToDo"))
-		item, err := a.store.Create(r.Context(), title)
+		crewSize, err := strconv.Atoi(strings.TrimSpace(r.FormValue("crewSize")))
 		if err != nil {
+			http.Error(w, "equipe invalida", http.StatusBadRequest)
+			return
+		}
+
+		if err := a.store.Create(
+			r.Context(),
+			r.FormValue("customerName"),
+			r.FormValue("eventName"),
+			r.FormValue("eventCity"),
+			r.FormValue("eventDate"),
+			r.FormValue("vehicleLabel"),
+			crewSize,
+		); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 
-		a.render(w, "todo", item)
+		a.renderOrdersPanel(w, r)
 	default:
 		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
 	}
 }
 
-func (a *app) handleTodoByID(w http.ResponseWriter, r *http.Request) {
-	id, err := parseID(strings.TrimPrefix(r.URL.Path, "/todos/"))
+func (a *app) handleOrderByID(w http.ResponseWriter, r *http.Request) {
+	id, err := parseID(strings.TrimPrefix(r.URL.Path, "/orders/"))
 	if err != nil {
 		http.NotFound(w, r)
 		return
@@ -164,9 +190,8 @@ func (a *app) handleTodoByID(w http.ResponseWriter, r *http.Request) {
 
 	switch r.Method {
 	case http.MethodPut:
-		item, err := a.store.Toggle(r.Context(), id)
-		if err != nil {
-			if errors.Is(err, todo.ErrNotFound) {
+		if err := a.store.AdvanceStatus(r.Context(), id); err != nil {
+			if errors.Is(err, orders.ErrNotFound) {
 				http.NotFound(w, r)
 				return
 			}
@@ -174,10 +199,10 @@ func (a *app) handleTodoByID(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		a.render(w, "todo", item)
+		a.renderOrdersPanel(w, r)
 	case http.MethodDelete:
 		if err := a.store.Delete(r.Context(), id); err != nil {
-			if errors.Is(err, todo.ErrNotFound) {
+			if errors.Is(err, orders.ErrNotFound) {
 				http.NotFound(w, r)
 				return
 			}
@@ -185,10 +210,31 @@ func (a *app) handleTodoByID(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		w.WriteHeader(http.StatusOK)
+		a.renderOrdersPanel(w, r)
 	default:
 		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
 	}
+}
+
+func (a *app) renderOrdersPanel(w http.ResponseWriter, r *http.Request) {
+	data, err := a.dashboard(r.Context())
+	if err != nil {
+		a.internalError(w, err)
+		return
+	}
+	a.render(w, "orders-panel", data)
+}
+
+func (a *app) dashboard(ctx context.Context) (dashboardData, error) {
+	items, err := a.store.List(ctx)
+	if err != nil {
+		return dashboardData{}, err
+	}
+
+	return dashboardData{
+		Orders:  items,
+		Summary: orders.BuildSummary(items),
+	}, nil
 }
 
 func (a *app) render(w http.ResponseWriter, name string, data any) {
@@ -221,4 +267,30 @@ func logRequests(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r)
 		log.Printf("%s %s %s", r.Method, r.URL.Path, time.Since(start).Round(time.Millisecond))
 	})
+}
+
+func formatDateBR(value time.Time) string {
+	return value.Format("02/01/2006")
+}
+
+func formatMoneyBRL(value float64) string {
+	reais := int64(math.Round(value * 100))
+	inteiro := reais / 100
+	centavos := reais % 100
+	if centavos < 0 {
+		centavos = -centavos
+	}
+
+	intPart := strconv.FormatInt(inteiro, 10)
+	if len(intPart) > 3 {
+		var groups []string
+		for len(intPart) > 3 {
+			groups = append([]string{intPart[len(intPart)-3:]}, groups...)
+			intPart = intPart[:len(intPart)-3]
+		}
+		groups = append([]string{intPart}, groups...)
+		intPart = strings.Join(groups, ".")
+	}
+
+	return fmt.Sprintf("R$ %s,%02d", intPart, centavos)
 }

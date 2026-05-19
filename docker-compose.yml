@@ -2,9 +2,9 @@ services:
   postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_DB: todos
-      POSTGRES_USER: todos
-      POSTGRES_PASSWORD: todos
+      POSTGRES_DB: tsure
+      POSTGRES_USER: tsure
+      POSTGRES_PASSWORD: tsure
     ports:
       - "5432:5432"
     volumes:

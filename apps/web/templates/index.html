@@ -3,46 +3,79 @@
 {{define "content"}}
 <main class="page">
   <section class="hero">
-    <p class="eyebrow">HTMX + Go + PostgreSQL</p>
-    <h1>A To Do example</h1>
+    <div class="hero-bar">
+      <p class="eyebrow">tsure | ERP de leasing e locacao para eventos</p>
+      <p class="stamp">Base operacional em {{.Today}}</p>
+    </div>
+    <h1>Operacao, frota e recebiveis num fluxo unico.</h1>
     <p class="lede">
-      Server-rendered fragments, progressive enhancement, and a small
-      PostgreSQL-backed data layer.
+      O projeto agora nasce como produto, nao como template. Esta tela inicial
+      concentra ordens de servico, planejamento de equipes, alocacao de frota e
+      visao financeira resumida para a operacao do dia.
     </p>
   </section>
 
-  <section class="card">
+  <section class="shell">
     <form
-      id="new-todo"
+      id="new-order"
       class="composer"
-      hx-post="/todos"
-      hx-target="#todos-list"
-      hx-swap="beforeend"
+      hx-post="/orders"
+      hx-target="#operations-panel"
+      hx-swap="innerHTML"
       hx-indicator=".htmx-indicator"
-      hx-on::after-request="event.target.reset()"
+      hx-on::after-request="if (event.detail.successful) event.target.reset()"
     >
-      <input
-        type="text"
-        name="newToDo"
-        placeholder="What needs to be done?"
-        autocomplete="off"
-        required
-      />
-      <button type="submit">Add task</button>
+      <div class="form-intro">
+        <p class="section-kicker">Nova OS rapida</p>
+        <h2>Registrar uma nova demanda comercial ou operacional</h2>
+      </div>
+
+      <div class="field-grid">
+        <label>
+          <span>Cliente</span>
+          <input type="text" name="customerName" placeholder="Nome do cliente" autocomplete="off" required />
+        </label>
+        <label>
+          <span>Evento</span>
+          <input type="text" name="eventName" placeholder="Nome do evento" autocomplete="off" required />
+        </label>
+        <label>
+          <span>Cidade</span>
+          <input type="text" name="eventCity" placeholder="Cidade de operacao" autocomplete="off" required />
+        </label>
+        <label>
+          <span>Data</span>
+          <input type="date" name="eventDate" value="{{.DefaultDate}}" required />
+        </label>
+        <label>
+          <span>Veiculo</span>
+          <input type="text" name="vehicleLabel" value="{{.DefaultVehicle}}" autocomplete="off" required />
+        </label>
+        <label>
+          <span>Equipe</span>
+          <input type="number" min="1" name="crewSize" value="{{.DefaultCrewSize}}" required />
+        </label>
+      </div>
+
+      <div class="composer-actions">
+        <button type="submit">Criar ordem de servico</button>
+        <p class="hint">Cada nova OS entra em orcamento com valor-base estimado pela equipe alocada.</p>
+      </div>
     </form>
 
-    <ul
-      id="todos-list"
-      class="todo-list"
-      hx-get="/todos"
+    <section
+      id="operations-panel"
+      class="operations-panel"
+      hx-get="/orders"
       hx-trigger="load"
       hx-indicator=".htmx-indicator"
-    ></ul>
+      aria-live="polite"
+    ></section>
 
     <div class="loading">
       <span class="htmx-indicator">
         <img src="/static/bars.svg" alt="" />
-        Loading tasks...
+        Carregando operacao...
       </span>
     </div>
   </section>
