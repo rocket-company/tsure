@@ -1,0 +1,87 @@
+{{define "equipment-panel"}}
+<section class="panel panel--full">
+  <div class="panel-head">
+    <div>
+      <p class="section-kicker">Patrimonio</p>
+      <h3>Cadastro de equipamentos</h3>
+    </div>
+    <p class="table-note">Controle de itens locaveis com quantidade e status.</p>
+  </div>
+
+  <div class="status-filter-bar" style="margin-bottom:0.75rem;">
+    <button class="status-filter is-active" type="button">Todos</button>
+    <button class="status-filter" type="button">Disponiveis</button>
+    <button class="status-filter" type="button">Em manutencao</button>
+  </div>
+
+  <div class="order-sheet">
+    <div class="order-grid-head" aria-hidden="true">
+      <span>Codigo</span>
+      <span>Nome</span>
+      <span>Categoria</span>
+      <span>Qtde total</span>
+      <span>Status</span>
+      <span>Acoes</span>
+    </div>
+    <div class="order-grid">
+      {{if .EquipmentList}}
+        {{range .EquipmentList}}
+          <article class="order-row">
+            <div class="order-cell order-cell--code">
+              <p class="order-code">{{.Code}}</p>
+            </div>
+            <div class="order-cell">
+              <p class="order-mainline">{{.Name}}</p>
+            </div>
+            <div class="order-cell">
+              <p class="order-subtle">{{.Category}}</p>
+            </div>
+            <div class="order-cell">
+              <p class="order-mainline">{{.QuantityTotal}}</p>
+            </div>
+            <div class="order-cell">
+              <span class="status-pill">{{.Status}}</span>
+            </div>
+            <div class="order-actions">
+              <span class="order-subtle">ID {{.ID}}</span>
+            </div>
+          </article>
+        {{end}}
+      {{else}}
+        <div class="empty-state">Nenhum equipamento cadastrado.</div>
+      {{end}}
+    </div>
+  </div>
+
+  <div style="padding:1rem;border-top:1px solid var(--line);">
+    <h4 style="margin:0 0 0.5rem;font-size:0.95rem;">Novo equipamento</h4>
+    <form
+      hx-post="/equipment"
+      hx-target="#inventory-panel"
+      hx-swap="innerHTML"
+      hx-indicator=".htmx-indicator"
+      style="display:grid;gap:0.6rem;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));align-items:end;"
+    >
+      <div>
+        <label style="font-size:0.72rem;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);">Codigo</label>
+        <input type="text" name="code" required style="width:100%;padding:0.45rem 0.6rem;border:1px solid var(--line);border-radius:8px;font:inherit;" />
+      </div>
+      <div>
+        <label style="font-size:0.72rem;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);">Nome</label>
+        <input type="text" name="name" required style="width:100%;padding:0.45rem 0.6rem;border:1px solid var(--line);border-radius:8px;font:inherit;" />
+      </div>
+      <div>
+        <label style="font-size:0.72rem;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);">Categoria</label>
+        <input type="text" name="category" value="geral" style="width:100%;padding:0.45rem 0.6rem;border:1px solid var(--line);border-radius:8px;font:inherit;" />
+      </div>
+      <div>
+        <label style="font-size:0.72rem;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);">Quantidade</label>
+        <input type="number" name="quantity" value="1" min="1" style="width:100%;padding:0.45rem 0.6rem;border:1px solid var(--line);border-radius:8px;font:inherit;" />
+      </div>
+      <div>
+        <button type="submit" class="advance" style="width:100%;">Cadastrar</button>
+      </div>
+    </form>
+  </div>
+</section>
+{{end}}
