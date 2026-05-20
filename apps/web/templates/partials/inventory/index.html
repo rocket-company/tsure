@@ -1,0 +1,48 @@
+{{define "inventory-index"}}
+<section class="panel panel--full" id="inventory-panel">
+  <div class="panel-head">
+    <div>
+      <p class="section-kicker">Patrimonio e estoque</p>
+      <h3>Gestao de equipamentos, kits e disponibilidade</h3>
+    </div>
+    <p class="table-note">Cadastre itens, monte kits e consulte disponibilidade por periodo.</p>
+  </div>
+
+  <div class="status-filter-bar" style="padding:0 1rem 0.75rem;">
+    <button
+      class="status-filter {{if eq .Tab "equipment"}}is-active{{end}}"
+      hx-get="/equipment"
+      hx-target="#inventory-panel"
+      hx-swap="innerHTML"
+      hx-indicator=".htmx-indicator"
+      type="button"
+    >Equipamentos</button>
+    <button
+      class="status-filter {{if eq .Tab "kits"}}is-active{{end}}"
+      hx-get="/kits"
+      hx-target="#inventory-panel"
+      hx-swap="innerHTML"
+      hx-indicator=".htmx-indicator"
+      type="button"
+    >Kits</button>
+    <button
+      class="status-filter {{if eq .Tab "availability"}}is-active{{end}}"
+      hx-get="/availability"
+      hx-target="#inventory-panel"
+      hx-swap="innerHTML"
+      hx-indicator=".htmx-indicator"
+      type="button"
+    >Disponibilidade</button>
+  </div>
+
+  {{if eq .Tab "equipment"}}
+    {{template "equipment-panel" .}}
+  {{else if eq .Tab "kits"}}
+    {{template "kits-panel" .}}
+  {{else if eq .Tab "availability"}}
+    {{template "availability-panel" .}}
+  {{else}}
+    {{template "equipment-panel" .}}
+  {{end}}
+</section>
+{{end}}
