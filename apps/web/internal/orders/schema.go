@@ -1,3 +1,6 @@
+package orders
+
+const bootstrapSchema = `
 CREATE TABLE IF NOT EXISTS service_orders (
 	id BIGSERIAL PRIMARY KEY,
 	code TEXT NOT NULL UNIQUE,
@@ -238,3 +241,4 @@ CREATE TABLE IF NOT EXISTS "TabSaidaVeicRet" (
 	"IdEvento" BIGINT REFERENCES "TabAgenda"("IdServ"),
 	"IdVeicExt" BIGINT REFERENCES "TabVeiculo"("IdVeic")
 );
+`
