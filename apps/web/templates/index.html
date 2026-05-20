@@ -1,83 +1,353 @@
 {{define "index"}}{{template "layout" .}}{{end}}
 
 {{define "content"}}
-<main class="page">
-  <section class="hero">
-    <div class="hero-bar">
-      <p class="eyebrow">tsure | ERP de leasing e locacao para eventos</p>
-      <p class="stamp">Base operacional em {{.Today}}</p>
+<main class="app-shell">
+  <aside class="sidebar">
+    <div class="brand-block">
+      <p class="eyebrow">tsure logistics ERP</p>
+      <h1 class="brand">Torre de operacao para frota, expedicao e patio.</h1>
+      <p class="brand-copy">
+        {{.Subtitle}}
+      </p>
     </div>
-    <h1>Operacao, frota e recebiveis num fluxo unico.</h1>
-    <p class="lede">
-      O projeto agora nasce como produto, nao como template. Esta tela inicial
-      concentra ordens de servico, planejamento de equipes, alocacao de frota e
-      visao financeira resumida para a operacao do dia.
-    </p>
-  </section>
 
-  <section class="shell">
-    <form
-      id="new-order"
-      class="composer"
-      hx-post="/orders"
-      hx-target="#operations-panel"
-      hx-swap="innerHTML"
-      hx-indicator=".htmx-indicator"
-      hx-on::after-request="if (event.detail.successful) event.target.reset()"
-    >
-      <div class="form-intro">
-        <p class="section-kicker">Nova OS rapida</p>
-        <h2>Registrar uma nova demanda comercial ou operacional</h2>
+    <nav class="nav-list" aria-label="Secoes do produto">
+      <a class="nav-item is-active" href="#overview">
+        <span>Visao geral</span>
+        <small>KPIs, alertas e fila operacional</small>
+      </a>
+      <a class="nav-item" href="#operations">
+        <span>Despacho</span>
+        <small>Rotas, coletas e entregas</small>
+      </a>
+      <a class="nav-item" href="#yard">
+        <span>Patio e estoque</span>
+        <small>Docas, separacao e inventario</small>
+      </a>
+      <a class="nav-item" href="#finance">
+        <span>Financeiro</span>
+        <small>Recebiveis e conciliacao</small>
+      </a>
+    </nav>
+
+    <section class="sidebar-card">
+      <p class="section-kicker">Operacao do dia</p>
+      <div class="sidebar-status">
+        <strong>{{.Today}}</strong>
+        <span>Janela de despacho concentrada entre 06h e 14h.</span>
+      </div>
+      <ul class="status-list">
+        <li><span></span> 18 rotas ativas</li>
+        <li><span></span> 07 docas ocupadas</li>
+        <li><span></span> 11 veiculos em campo</li>
+      </ul>
+    </section>
+  </aside>
+
+  <section class="workspace">
+    <header class="topbar" id="overview">
+      <div>
+        <p class="eyebrow">Painel central</p>
+        <h2>{{.HeroTitle}}</h2>
+        <p class="lede">{{.HeroCopy}}</p>
       </div>
 
-      <div class="field-grid">
-        <label>
-          <span>Cliente</span>
-          <input type="text" name="customerName" placeholder="Nome do cliente" autocomplete="off" required />
-        </label>
-        <label>
-          <span>Evento</span>
-          <input type="text" name="eventName" placeholder="Nome do evento" autocomplete="off" required />
-        </label>
-        <label>
-          <span>Cidade</span>
-          <input type="text" name="eventCity" placeholder="Cidade de operacao" autocomplete="off" required />
-        </label>
-        <label>
-          <span>Data</span>
-          <input type="date" name="eventDate" value="{{.DefaultDate}}" required />
-        </label>
-        <label>
-          <span>Veiculo</span>
-          <input type="text" name="vehicleLabel" value="{{.DefaultVehicle}}" autocomplete="off" required />
-        </label>
-        <label>
-          <span>Equipe</span>
-          <input type="number" min="1" name="crewSize" value="{{.DefaultCrewSize}}" required />
-        </label>
+      <div class="topbar-actions">
+        <a class="action-link" href="#operations">{{.PrimaryAction}}</a>
+        <a class="action-link action-link--ghost" href="#yard">{{.SecondaryAction}}</a>
       </div>
+    </header>
 
-      <div class="composer-actions">
-        <button type="submit">Criar ordem de servico</button>
-        <p class="hint">Cada nova OS entra em orcamento com valor-base estimado pela equipe alocada.</p>
+    <section class="sheet-toolbar" aria-label="Abas e filtros da planilha">
+      <div class="sheet-tabs">
+        <a class="sheet-tab is-active" href="#overview">Resumo</a>
+        <a class="sheet-tab" href="#operations">Programacao</a>
+        <a class="sheet-tab" href="#comercial">Comercial</a>
+        <a class="sheet-tab" href="#yard">Estoque</a>
+        <a class="sheet-tab" href="#inventory">Patrimonio</a>
+        <a class="sheet-tab" href="#reports">Relatorios</a>
+        <a class="sheet-tab" href="#finance">Financeiro</a>
       </div>
-    </form>
+      <div class="sheet-filters">
+        <span class="sheet-filter">Hoje</span>
+        <span class="sheet-filter">Pendentes</span>
+        <span class="sheet-filter">Em rota</span>
+        <span class="sheet-filter">Frota disponível</span>
+      </div>
+    </section>
+
+    <section class="erp-band" aria-label="Contexto do sistema">
+      <article class="erp-band-card">
+        <span>Unidade</span>
+        <strong>Centro Operacional Norte</strong>
+      </article>
+      <article class="erp-band-card">
+        <span>Periodo</span>
+        <strong>{{.Today}}</strong>
+      </article>
+      <article class="erp-band-card">
+        <span>Ambiente</span>
+        <strong>Producao assistida</strong>
+      </article>
+      <article class="erp-band-card">
+        <span>Fila atual</span>
+        <strong>24 registros</strong>
+      </article>
+    </section>
 
     <section
-      id="operations-panel"
-      class="operations-panel"
-      hx-get="/orders"
+      id="alerts-panel"
+      hx-get="/alerts"
       hx-trigger="load"
       hx-indicator=".htmx-indicator"
       aria-live="polite"
     ></section>
 
-    <div class="loading">
-      <span class="htmx-indicator">
-        <img src="/static/bars.svg" alt="" />
-        Carregando operacao...
-      </span>
-    </div>
+    <section class="metric-grid" aria-label="Indicadores principais">
+      {{range .Metrics}}
+        <article class="metric-card metric-card--{{.Tone}}">
+          <div class="metric-head">
+            <span class="metric-label">{{.Label}}</span>
+            <span class="metric-delta">{{.Delta}}</span>
+          </div>
+          <strong>{{.Value}}</strong>
+          <p>{{.Note}}</p>
+        </article>
+      {{end}}
+    </section>
+
+    <section class="hero-panel">
+      <div class="hero-panel__copy">
+        <p class="section-kicker">Centro de controle</p>
+        <h3>ERP desenhado para logistica, despacho e operacao de campo.</h3>
+        <p>
+          O mock ja organiza o produto como um sistema de operacao real: fila de rotas,
+          veiculos, estoque, pontos criticos e visao financeira convivendo na mesma tela.
+        </p>
+      </div>
+
+      <div class="hero-panel__highlights">
+        <div>
+          <span>Prioridade</span>
+          <strong>Roteirizacao urbana</strong>
+          <p>Alocacao de veiculos leves para entregas de alta frequencia.</p>
+        </div>
+        <div>
+          <span>Risco</span>
+          <strong>Janela de doca</strong>
+          <p>Monitoramento de filas e conferencia para evitar gargalo operacional.</p>
+        </div>
+        <div>
+          <span>Saude</span>
+          <strong>Telemetria online</strong>
+          <p>Rastreio e status de frota visiveis para operacao e planejamento.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel panel--full" id="comercial">
+      <div class="panel-head">
+        <div>
+          <p class="section-kicker">Comercial</p>
+          <h3>Orçamentos e propostas</h3>
+        </div>
+        <p class="table-note">Propostas comerciais que alimentam a operacao.</p>
+      </div>
+
+      <section
+        id="budgets-panel"
+        class="operations-panel"
+        hx-get="/budgets"
+        hx-trigger="load"
+        hx-indicator=".htmx-indicator"
+        aria-live="polite"
+      ></section>
+
+      <div class="loading">
+        <span class="htmx-indicator">
+          <img src="/static/bars.svg" alt="" />
+          Carregando orçamentos...
+        </span>
+      </div>
+    </section>
+
+    <section class="content-grid">
+      <article class="panel panel--wide" id="operations">
+        <div class="panel-head">
+          <div>
+            <p class="section-kicker">Despacho</p>
+            <h3>Fila operacional do dia</h3>
+          </div>
+          <p class="table-note">Mock de trabalho realista para entregas, coletas e transferencias.</p>
+        </div>
+
+        <div class="mission-list">
+          {{range .Operations}}
+            <article class="mission-card mission-card--{{.Tone}}">
+              <div class="mission-card__head">
+                <div>
+                  <p class="order-code">{{.Code}}</p>
+                  <h4>{{.Title}}</h4>
+                </div>
+                <span class="status-pill">{{.Status}}</span>
+              </div>
+              <p class="mission-client">{{.Client}}</p>
+              <p class="mission-route">{{.Route}} | {{.Window}}</p>
+              <p class="mission-summary">{{.Summary}}</p>
+              <dl class="mission-meta">
+                <div>
+                  <dt>Veiculo</dt>
+                  <dd>{{.Vehicle}}</dd>
+                </div>
+                <div>
+                  <dt>Equipe</dt>
+                  <dd>{{.Driver}}</dd>
+                </div>
+              </dl>
+            </article>
+          {{end}}
+        </div>
+      </article>
+
+      <aside class="stack">
+        <article class="panel panel--compact">
+          <div class="panel-head">
+            <div>
+              <p class="section-kicker">Frota</p>
+              <h3>Capacidade disponivel</h3>
+            </div>
+          </div>
+
+          <div class="stack-cards">
+            {{range .Fleet}}
+              <div class="mini-card mini-card--{{.Tone}}">
+                <span>{{.Label}}</span>
+                <strong>{{.Value}}</strong>
+                <p>{{.Detail}}</p>
+              </div>
+            {{end}}
+          </div>
+        </article>
+
+        <article class="panel panel--compact" id="yard">
+          <div class="panel-head">
+            <div>
+              <p class="section-kicker">Patio e estoque</p>
+              <h3>Conferencia e separacao</h3>
+            </div>
+          </div>
+
+          <div class="stack-cards">
+            {{range .Warehouse}}
+              <div class="mini-card mini-card--{{.Tone}}">
+                <span>{{.Label}}</span>
+                <strong>{{.Value}}</strong>
+                <p>{{.Detail}}</p>
+              </div>
+            {{end}}
+          </div>
+        </article>
+
+        <article class="panel panel--compact">
+          <div class="panel-head">
+            <div>
+              <p class="section-kicker">Linha do tempo</p>
+              <h3>Eventos relevantes</h3>
+            </div>
+          </div>
+
+          <div class="timeline">
+            {{range .Timeline}}
+              <div class="timeline-item timeline-item--{{.Tone}}">
+                <span>{{.Time}}</span>
+                <div>
+                  <strong>{{.Title}}</strong>
+                  <p>{{.Detail}}</p>
+                </div>
+              </div>
+            {{end}}
+          </div>
+        </article>
+      </aside>
+    </section>
+
+    <section class="panel panel--full" id="inventory">
+      <div class="panel-head">
+        <div>
+          <p class="section-kicker">Patrimonio</p>
+          <h3>Equipamentos, kits e disponibilidade</h3>
+        </div>
+        <p class="table-note">Cadastro de itens locaveis com controle de reserva por data.</p>
+      </div>
+
+      <section
+        id="inventory-panel"
+        class="operations-panel"
+        hx-get="/inventory"
+        hx-trigger="load"
+        hx-indicator=".htmx-indicator"
+        aria-live="polite"
+      ></section>
+
+      <div class="loading">
+        <span class="htmx-indicator">
+          <img src="/static/bars.svg" alt="" />
+          Carregando patrimonio...
+        </span>
+      </div>
+    </section>
+
+    <section class="panel panel--full" id="reports">
+      <div class="panel-head">
+        <div>
+          <p class="section-kicker">Relatorios</p>
+          <h3>Indicadores gerenciais e operacionais</h3>
+        </div>
+        <p class="table-note">Acompanhe custos, avarias e produtividade do negocio.</p>
+      </div>
+
+      <section
+        id="reports-panel"
+        class="operations-panel"
+        hx-get="/reports/damages"
+        hx-trigger="load"
+        hx-indicator=".htmx-indicator"
+        aria-live="polite"
+      ></section>
+
+      <div class="loading">
+        <span class="htmx-indicator">
+          <img src="/static/bars.svg" alt="" />
+          Carregando relatorios...
+        </span>
+      </div>
+    </section>
+
+    <section class="panel panel--full" id="finance">
+      <div class="panel-head">
+        <div>
+          <p class="section-kicker">Financeiro</p>
+          <h3>Programacao logistica vinculada a recebiveis</h3>
+        </div>
+        <p class="table-note">A lista abaixo vem do backend atual e ainda sera conectada ao novo modelo de dados.</p>
+      </div>
+
+      <section
+        id="operations-panel"
+        class="operations-panel"
+        hx-get="/orders"
+        hx-trigger="load"
+        hx-indicator=".htmx-indicator"
+        aria-live="polite"
+      ></section>
+
+      <div class="loading">
+        <span class="htmx-indicator">
+          <img src="/static/bars.svg" alt="" />
+          Carregando programacao...
+        </span>
+      </div>
+    </section>
   </section>
 </main>
 {{end}}
