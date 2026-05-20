@@ -1,59 +1,80 @@
 {{define "order"}}
-<li class="order-item status-{{.Status}}">
-  <div class="order-main">
-    <div class="order-head">
-      <div>
-        <p class="order-code">{{.Code}}</p>
-        <h3>{{.EventName}}</h3>
-      </div>
-      <span class="status-pill">{{statusLabel .Status}}</span>
-    </div>
+<article class="order-row status-{{.Order.Status}}">
+  <div class="order-cell order-cell--code">
+    <p class="order-code">{{.Order.Code}}</p>
+    <span class="order-subtle">{{formatDate .Order.EventDate}}</span>
+    {{if .Order.InstallDate}}
+      <span class="order-subtle">Inst: {{formatDate .Order.InstallDate}}</span>
+    {{end}}
+    {{if .Order.ReturnDate}}
+      <span class="order-subtle">Ret: {{formatDate .Order.ReturnDate}}</span>
+    {{end}}
+  </div>
 
-    <p class="order-customer">{{.CustomerName}} · {{.EventCity}} · {{formatDate .EventDate}}</p>
-    <p class="order-inventory">{{.InventorySummary}}</p>
+  <div class="order-cell">
+    <h3>{{.Order.CustomerName}}</h3>
+    <p class="order-mainline">{{.Order.EventName}}</p>
+    <p class="order-subtle">{{.Order.EventCity}}</p>
+  </div>
 
-    <dl class="order-meta">
-      <div>
-        <dt>Frota</dt>
-        <dd>{{.VehicleLabel}}</dd>
-      </div>
-      <div>
-        <dt>Equipe</dt>
-        <dd>{{.CrewSize}} tecnicos</dd>
-      </div>
-      <div>
-        <dt>Contrato</dt>
-        <dd>{{formatMoney .TotalAmount}}</dd>
-      </div>
-      <div>
-        <dt>Saldo</dt>
-        <dd>{{formatMoney .BalanceDue}}</dd>
-      </div>
-    </dl>
+  <div class="order-cell">
+    <p class="order-mainline">{{.Order.VehicleLabel}}</p>
+    <p class="order-subtle">{{.Order.CrewSize}} tecnicos</p>
+    {{if .Items}}
+      <p class="order-subtle" style="margin-top:0.2rem;">
+        {{range $i, $it := .Items}}{{if $i}}, {{end}}{{$it.EquipmentCode}} x{{$it.Quantity}}{{end}}
+      </p>
+    {{end}}
+  </div>
+
+  <div class="order-cell order-cell--money">
+    <p class="order-money">{{formatMoney .Order.TotalAmount}}</p>
+    <p class="order-subtle">Saldo {{formatMoney .Order.BalanceDue}}</p>
+    {{if gt .TotalCharges 0.0}}
+      <p class="order-subtle" style="color:var(--danger);">+ {{formatMoney .TotalCharges}} em charges</p>
+    {{end}}
+  </div>
+
+  <div class="order-cell">
+    <span class="status-pill">{{statusLabel .Order.Status}}</span>
+    <p class="order-subtle">Proxima etapa: {{nextStatusLabel .Order.Status}}</p>
   </div>
 
   <div class="order-actions">
-    <button
-      type="button"
-      class="advance"
-      hx-put="/orders/{{.ID}}"
-      hx-target="#operations-panel"
-      hx-swap="innerHTML"
-      hx-indicator=".htmx-indicator"
-    >
-      Avancar para {{nextStatusLabel .Status}}
-    </button>
+    {{if eq .Order.Status "aguardando_retorno"}}
+      <button
+        type="button"
+        class="advance"
+        hx-get="/orders/checklist/{{.Order.ID}}"
+        hx-target="closest .order-row"
+        hx-swap="afterend"
+        hx-indicator=".htmx-indicator"
+      >
+        Conferir retorno
+      </button>
+    {{else}}
+      <button
+        type="button"
+        class="advance"
+        hx-put="/orders/{{.Order.ID}}"
+        hx-target="#operations-panel"
+        hx-swap="innerHTML"
+        hx-indicator=".htmx-indicator"
+      >
+        Avancar
+      </button>
+    {{end}}
 
     <button
       type="button"
       class="delete"
-      hx-delete="/orders/{{.ID}}"
+      hx-delete="/orders/{{.Order.ID}}"
       hx-target="#operations-panel"
       hx-swap="innerHTML"
       hx-indicator=".htmx-indicator"
     >
-      Excluir OS
+      Excluir
     </button>
   </div>
-</li>
+</article>
 {{end}}
