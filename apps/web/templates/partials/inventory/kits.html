@@ -1,0 +1,69 @@
+{{define "kits-panel"}}
+<section class="panel panel--full">
+  <div class="panel-head">
+    <div>
+      <p class="section-kicker">Composicoes</p>
+      <h3>Kits de equipamentos</h3>
+    </div>
+    <p class="table-note">Agrupe itens que saem juntos para montagem rapida de propostas.</p>
+  </div>
+
+  <div class="order-sheet">
+    <div class="order-grid-head" aria-hidden="true">
+      <span>Codigo</span>
+      <span>Nome</span>
+      <span>Itens</span>
+      <span>Descricao</span>
+    </div>
+    <div class="order-grid">
+      {{if .KitList}}
+        {{range .KitList}}
+          <article class="order-row">
+            <div class="order-cell order-cell--code">
+              <p class="order-code">{{.Code}}</p>
+            </div>
+            <div class="order-cell">
+              <p class="order-mainline">{{.Name}}</p>
+            </div>
+            <div class="order-cell">
+              <p class="order-subtle">kit</p>
+            </div>
+            <div class="order-cell">
+              <p class="order-subtle">{{.Description}}</p>
+            </div>
+          </article>
+        {{end}}
+      {{else}}
+        <div class="empty-state">Nenhum kit cadastrado.</div>
+      {{end}}
+    </div>
+  </div>
+
+  <div style="padding:1rem;border-top:1px solid var(--line);">
+    <h4 style="margin:0 0 0.5rem;font-size:0.95rem;">Novo kit</h4>
+    <form
+      hx-post="/kits"
+      hx-target="#inventory-panel"
+      hx-swap="innerHTML"
+      hx-indicator=".htmx-indicator"
+      style="display:grid;gap:0.6rem;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));align-items:end;"
+    >
+      <div>
+        <label style="font-size:0.72rem;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);">Codigo</label>
+        <input type="text" name="code" required style="width:100%;padding:0.45rem 0.6rem;border:1px solid var(--line);border-radius:8px;font:inherit;" />
+      </div>
+      <div>
+        <label style="font-size:0.72rem;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);">Nome</label>
+        <input type="text" name="name" required style="width:100%;padding:0.45rem 0.6rem;border:1px solid var(--line);border-radius:8px;font:inherit;" />
+      </div>
+      <div>
+        <label style="font-size:0.72rem;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);">Descricao</label>
+        <input type="text" name="description" style="width:100%;padding:0.45rem 0.6rem;border:1px solid var(--line);border-radius:8px;font:inherit;" />
+      </div>
+      <div>
+        <button type="submit" class="advance" style="width:100%;">Cadastrar kit</button>
+      </div>
+    </form>
+  </div>
+</section>
+{{end}}
