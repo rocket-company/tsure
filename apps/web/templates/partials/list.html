@@ -1,24 +1,24 @@
 {{define "orders-panel"}}
   <section class="summary-grid">
     <article class="metric-card">
-      <span class="metric-label">Ordens abertas</span>
+      <span class="metric-label">Programacoes abertas</span>
       <strong>{{.Summary.TotalOrders}}</strong>
-      <p>Pipeline comercial e operacional visivel num unico quadro.</p>
+      <p>Pipeline de expedicao e operacao visivel num unico quadro.</p>
     </article>
     <article class="metric-card">
-      <span class="metric-label">Em campo</span>
+      <span class="metric-label">Em rota</span>
       <strong>{{.Summary.OrdersInField}}</strong>
-      <p>OS em execucao ou aguardando retorno de material.</p>
+      <p>Ordens em execucao ou aguardando retorno de material.</p>
     </article>
     <article class="metric-card">
-      <span class="metric-label">Frota reservada</span>
+      <span class="metric-label">Frota comprometida</span>
       <strong>{{.Summary.VehiclesReserved}}</strong>
-      <p>Veiculos comprometidos com agenda ativa.</p>
+      <p>Veiculos comprometidos com a agenda ativa.</p>
     </article>
     <article class="metric-card metric-card--money">
       <span class="metric-label">Recebiveis em aberto</span>
       <strong>{{formatMoney .Summary.OpenReceivables}}</strong>
-      <p>Saldo pendente do que ja esta proposto ou contratado.</p>
+      <p>Saldo pendente do que ja foi expedido ou faturado.</p>
     </article>
   </section>
 
@@ -26,19 +26,142 @@
     <div class="table-head">
       <div>
         <p class="section-kicker">Painel operacional</p>
-        <h2>Ordens de servico</h2>
+        <h2>Programacao logistica</h2>
       </div>
-      <p class="table-note">Clique em "Avancar status" para mover a OS pelo fluxo operacional.</p>
+      <p class="table-note">Clique em "Avancar etapa" para simular o fluxo operacional.</p>
     </div>
 
-    <ul class="order-list">
-      {{if .Orders}}
-        {{range .Orders}}
-          {{template "order" .}}
+    <div class="status-filter-bar" aria-label="Filtros por status">
+      <button
+        class="status-filter is-active"
+        hx-get="/orders"
+        hx-target="#operations-panel"
+        hx-swap="innerHTML"
+        hx-indicator=".htmx-indicator"
+        type="button"
+      >Todos</button>
+      <button
+        class="status-filter"
+        hx-get="/orders?status=orcamento"
+        hx-target="#operations-panel"
+        hx-swap="innerHTML"
+        hx-indicator=".htmx-indicator"
+        type="button"
+      >Orcamento</button>
+      <button
+        class="status-filter"
+        hx-get="/orders?status=agendado"
+        hx-target="#operations-panel"
+        hx-swap="innerHTML"
+        hx-indicator=".htmx-indicator"
+        type="button"
+      >Agendado</button>
+      <button
+        class="status-filter"
+        hx-get="/orders?status=em_execucao"
+        hx-target="#operations-panel"
+        hx-swap="innerHTML"
+        hx-indicator=".htmx-indicator"
+        type="button"
+      >Em execucao</button>
+      <button
+        class="status-filter"
+        hx-get="/orders?status=aguardando_retorno"
+        hx-target="#operations-panel"
+        hx-swap="innerHTML"
+        hx-indicator=".htmx-indicator"
+        type="button"
+      >Aguardando retorno</button>
+      <button
+        class="status-filter"
+        hx-get="/orders?status=finalizado"
+        hx-target="#operations-panel"
+        hx-swap="innerHTML"
+        hx-indicator=".htmx-indicator"
+        type="button"
+      >Finalizado</button>
+    </div>
+
+    <div style="padding:0 1rem 0.75rem;">
+      <h4 style="margin:0 0 0.5rem;font-size:0.95rem;">Nova ordem de servico</h4>
+      <form
+        hx-post="/orders"
+        hx-target="#operations-panel"
+        hx-swap="innerHTML"
+        hx-indicator=".htmx-indicator"
+        style="display:grid;gap:0.6rem;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));align-items:end;"
+      >
+        <div>
+          <label style="font-size:0.72rem;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);">Cliente</label>
+          <input type="text" name="customerName" required style="width:100%;padding:0.45rem 0.6rem;border:1px solid var(--line);border-radius:8px;font:inherit;" />
+        </div>
+        <div>
+          <label style="font-size:0.72rem;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);">Evento</label>
+          <input type="text" name="eventName" required style="width:100%;padding:0.45rem 0.6rem;border:1px solid var(--line);border-radius:8px;font:inherit;" />
+        </div>
+        <div>
+          <label style="font-size:0.72rem;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);">Cidade</label>
+          <input type="text" name="eventCity" required style="width:100%;padding:0.45rem 0.6rem;border:1px solid var(--line);border-radius:8px;font:inherit;" />
+        </div>
+        <div>
+          <label style="font-size:0.72rem;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);">Data evento</label>
+          <input type="date" name="eventDate" required style="width:100%;padding:0.45rem 0.6rem;border:1px solid var(--line);border-radius:8px;font:inherit;" />
+        </div>
+        <div>
+          <label style="font-size:0.72rem;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);">Instalacao</label>
+          <input type="date" name="installDate" style="width:100%;padding:0.45rem 0.6rem;border:1px solid var(--line);border-radius:8px;font:inherit;" />
+        </div>
+        <div>
+          <label style="font-size:0.72rem;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);">Retorno</label>
+          <input type="date" name="returnDate" style="width:100%;padding:0.45rem 0.6rem;border:1px solid var(--line);border-radius:8px;font:inherit;" />
+        </div>
+        <div>
+          <label style="font-size:0.72rem;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);">Veiculo</label>
+          <input type="text" name="vehicleLabel" required style="width:100%;padding:0.45rem 0.6rem;border:1px solid var(--line);border-radius:8px;font:inherit;" />
+        </div>
+        <div>
+          <label style="font-size:0.72rem;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);">Equipe</label>
+          <input type="number" name="crewSize" value="4" min="1" style="width:100%;padding:0.45rem 0.6rem;border:1px solid var(--line);border-radius:8px;font:inherit;" />
+        </div>
+        <div style="grid-column:1/-1;">
+          <label style="font-size:0.72rem;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);">Equipamentos disponiveis (informe as datas para carregar)</label>
+          <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+            <select name="equipmentIDs" multiple size="4"
+              hx-get="/available-equipment"
+              hx-target="this"
+              hx-trigger="change from:[name='installDate'], change from:[name='returnDate']"
+              hx-include="[name='installDate'], [name='returnDate']"
+              style="flex:1 1 300px;padding:0.45rem 0.6rem;border:1px solid var(--line);border-radius:8px;font:inherit;"
+            >
+              <option value="">Preencha instalacao e retorno para ver equipamentos</option>
+            </select>
+          </div>
+        </div>
+        <div style="grid-column:1/-1;">
+          <button type="submit" class="advance">Criar OS</button>
+        </div>
+      </form>
+    </div>
+
+    <div class="order-sheet">
+      <div class="order-grid-head" aria-hidden="true">
+        <span>OS</span>
+        <span>Cliente / Evento</span>
+        <span>Frota / Equipe</span>
+        <span>Valores</span>
+        <span>Status</span>
+        <span>Acoes</span>
+      </div>
+
+      <div class="order-grid">
+        {{if .Orders}}
+          {{range .Orders}}
+            {{template "order" .}}
+          {{end}}
+        {{else}}
+          <div class="empty-state">Nenhuma programacao cadastrada ainda. A fila aparecera quando houver dados no banco.</div>
         {{end}}
-      {{else}}
-        <li class="empty-state">Nenhuma OS cadastrada ainda. Use o formulario acima para iniciar a operacao.</li>
-      {{end}}
-    </ul>
+      </div>
+    </div>
   </section>
 {{end}}
