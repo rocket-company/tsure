@@ -1,0 +1,98 @@
+{{define "damages-report"}}
+<section class="panel panel--full">
+  <div class="panel-head">
+    <div>
+      <p class="section-kicker">Relatorios</p>
+      <h3>Relatorio de avarias e perdas</h3>
+    </div>
+    <p class="table-note">Visao gerencial de custos operacionais com patrimonio.</p>
+  </div>
+
+  <section class="summary-grid" style="margin-bottom:1rem;">
+    <article class="metric-card metric-card--money">
+      <span class="metric-label">Total em charges</span>
+      <strong>{{formatMoney .TotalCharges}}</strong>
+      <p>Soma de avarias, perdas, despesas e multas registradas.</p>
+    </article>
+    {{range .ChargeSummary}}
+    <article class="metric-card">
+      <span class="metric-label">{{.Type}}</span>
+      <strong>{{formatMoney .Total}}</strong>
+      <p>{{.Count}} ocorrencia(s) registrada(s).</p>
+    </article>
+    {{end}}
+  </section>
+
+  {{if .DamageReport}}
+  <div style="margin-bottom:1rem;">
+    <h4 style="margin:0 0 0.5rem;font-size:0.95rem;">Equipamentos mais problematicos</h4>
+    <div class="order-sheet">
+      <div class="order-grid-head" aria-hidden="true">
+        <span>Equipamento</span>
+        <span>Ocorrencias</span>
+        <span>Avaria</span>
+        <span>Perda</span>
+        <span>Total</span>
+      </div>
+      <div class="order-grid">
+        {{range .DamageReport}}
+        <article class="order-row">
+          <div class="order-cell">
+            <p class="order-mainline">{{.EquipmentCode}} - {{.EquipmentName}}</p>
+          </div>
+          <div class="order-cell">
+            <p class="order-mainline">{{.CountIssues}}</p>
+          </div>
+          <div class="order-cell">
+            <p class="order-subtle">{{formatMoney .TotalAvaria}}</p>
+          </div>
+          <div class="order-cell">
+            <p class="order-subtle">{{formatMoney .TotalPerda}}</p>
+          </div>
+          <div class="order-cell order-cell--money">
+            <p class="order-money" style="color:var(--danger);">{{formatMoney .TotalGeral}}</p>
+          </div>
+        </article>
+        {{end}}
+      </div>
+    </div>
+  </div>
+  {{end}}
+
+  {{if .RecentCharges}}
+  <div>
+    <h4 style="margin:0 0 0.5rem;font-size:0.95rem;">Historico recente</h4>
+    <div class="order-sheet">
+      <div class="order-grid-head" aria-hidden="true">
+        <span>Data</span>
+        <span>OS</span>
+        <span>Tipo</span>
+        <span>Valor</span>
+        <span>Descricao</span>
+      </div>
+      <div class="order-grid">
+        {{range .RecentCharges}}
+        <article class="order-row">
+          <div class="order-cell">
+            <p class="order-subtle">{{.CreatedAt.Format "02/01/2006"}}</p>
+          </div>
+          <div class="order-cell order-cell--code">
+            <p class="order-code">OS-{{.ServiceOrderID}}</p>
+          </div>
+          <div class="order-cell">
+            <span class="status-pill" style="text-transform:capitalize;">{{.ChargeType}}</span>
+          </div>
+          <div class="order-cell order-cell--money">
+            <p class="order-money">{{formatMoney .Amount}}</p>
+          </div>
+          <div class="order-cell">
+            <p class="order-subtle">{{.Description}}</p>
+          </div>
+        </article>
+        {{end}}
+      </div>
+    </div>
+  </div>
+  {{end}}
+</section>
+{{end}}
