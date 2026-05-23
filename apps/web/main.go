@@ -2,7 +2,10 @@ package main
 
 import (
 	"context"
+	"crypto/rand"
+	"crypto/sha256"
 	"embed"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"html/template"
@@ -18,32 +21,31 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"tsure/apps/web/internal/auth"
+	"tsure/apps/web/internal/budgets"
+	"tsure/apps/web/internal/handlers"
+	"tsure/apps/web/internal/inventory"
+	"tsure/apps/web/internal/middleware"
 	"tsure/apps/web/internal/orders"
 )
 
 //go:embed templates/*.html templates/partials/*.html public/*
 var embeddedAssets embed.FS
 
-type pageData struct {
-	Title           string
-	Today           string
-	DefaultDate     string
-	DefaultVehicle  string
-	DefaultCrewSize int
-}
-
-type dashboardData struct {
-	Orders  []orders.ServiceOrder
-	Summary orders.DashboardSummary
-}
-
 type app struct {
 	store     *orders.Store
 	templates *template.Template
 }
 
+type pageData struct {
+	Title     string
+	Today     string
+	User      auth.User
+	CSRFField template.HTML
+}
+
 func main() {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
 	cfg := configFromEnv()
@@ -58,10 +60,27 @@ func main() {
 		log.Fatalf("ping postgres: %v", err)
 	}
 
-	store := orders.NewStore(pool)
-	if err := store.Init(ctx); err != nil {
-		log.Fatalf("init store: %v", err)
+	// Stores existentes (legado da v0; coexistem com o novo schema).
+	ordersStore := orders.NewStore(pool)
+	if err := ordersStore.Init(ctx); err != nil {
+		log.Fatalf("init orders store: %v", err)
 	}
+	budgetsStore := budgets.NewStore(pool)
+	if err := budgetsStore.Init(ctx); err != nil {
+		log.Fatalf("init budgets store: %v", err)
+	}
+	inventoryStore := inventory.NewStore(pool)
+	if err := inventoryStore.Init(ctx); err != nil {
+		log.Fatalf("init inventory store: %v", err)
+	}
+
+	// Auth: usuarios + sessoes web + JWT api.
+	usersStore := auth.NewStore(pool)
+	if err := usersStore.BootstrapAdmin(ctx); err != nil {
+		log.Fatalf("bootstrap admin: %v", err)
+	}
+	sessionStore := auth.NewSessionStore(pool, cfg.SessionTTL)
+	jwtSigner := auth.NewJWTSigner(cfg.JWTKey, cfg.JWTTTL)
 
 	tmpl := template.Must(template.New("").Funcs(template.FuncMap{
 		"formatMoney":     formatMoneyBRL,
@@ -74,27 +93,69 @@ func main() {
 		"templates/partials/*.html",
 	))
 
-	a := &app{
-		store:     store,
-		templates: tmpl,
+	a := &app{store: ordersStore, templates: tmpl}
+
+	webAuth := middleware.WebAuth{Users: usersStore, Sessions: sessionStore}
+	apiAuth := middleware.APIAuth{Users: usersStore, Signer: jwtSigner}
+	authHandler := handlers.AuthHandler{
+		Users:        usersStore,
+		Sessions:     sessionStore,
+		JWT:          jwtSigner,
+		SecureCookie: cfg.SecureCookie,
+		Templates:    tmpl,
 	}
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("/", a.handleIndex)
-	mux.HandleFunc("/orders", a.handleOrders)
-	mux.HandleFunc("/orders/", a.handleOrderByID)
 
+	// ---- Rotas publicas (web, sem auth, mas com CSRF)
+	mux.Handle("/login", webAuth.Optional(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			authHandler.ShowLogin(w, r)
+		case http.MethodPost:
+			authHandler.HandleLogin(w, r)
+		default:
+			http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
+		}
+	})))
+
+	// ---- Rotas web protegidas
+	mux.Handle("/logout", webAuth.Required(http.HandlerFunc(authHandler.HandleLogout)))
+	mux.Handle("/", webAuth.Required(http.HandlerFunc(a.handleIndex)))
+	mux.Handle("/orders", webAuth.Required(
+		middleware.RequireAnyPermission("agenda.read", "agenda.write")(
+			http.HandlerFunc(a.handleOrders),
+		),
+	))
+	mux.Handle("/orders/", webAuth.Required(
+		middleware.RequireAnyPermission("agenda.read", "agenda.write")(
+			http.HandlerFunc(a.handleOrderByID),
+		),
+	))
+
+	// ---- API JSON (mobile)  JWT bearer, sem CSRF
+	mux.Handle("/api/auth/login", http.HandlerFunc(authHandler.APILogin))
+	mux.Handle("/api/auth/me", apiAuth.Required(http.HandlerFunc(authHandler.APIMe)))
+
+	// ---- Static
 	staticFS, err := fs.Sub(embeddedAssets, "public")
 	if err != nil {
 		log.Fatalf("load static assets: %v", err)
 	}
 	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.FS(staticFS))))
 
+	// Cadeia de middlewares globais: recover -> log -> csrf (skip /api) -> mux
+	csrfMW := middleware.SkipAPICSRF(middleware.NewCSRF(middleware.CSRFConfig{
+		Key:    cfg.CSRFKey,
+		Secure: cfg.SecureCookie,
+	}))
+	handler := middleware.Recover(logRequests(csrfMW(mux)))
+
 	srv := &http.Server{
 		Addr:         cfg.Addr,
-		Handler:      logRequests(mux),
-		ReadTimeout:  10 * time.Second,
-		WriteTimeout: 10 * time.Second,
+		Handler:      handler,
+		ReadTimeout:  15 * time.Second,
+		WriteTimeout: 15 * time.Second,
 		IdleTimeout:  60 * time.Second,
 	}
 
@@ -105,8 +166,13 @@ func main() {
 }
 
 type config struct {
-	Addr        string
-	DatabaseURL string
+	Addr         string
+	DatabaseURL  string
+	CSRFKey      []byte
+	JWTKey       []byte
+	SessionTTL   time.Duration
+	JWTTTL       time.Duration
+	SecureCookie bool
 }
 
 func configFromEnv() config {
@@ -114,16 +180,42 @@ func configFromEnv() config {
 	if addr == "" {
 		addr = "127.0.0.1:3456"
 	}
-
 	dbURL := strings.TrimSpace(os.Getenv("DATABASE_URL"))
 	if dbURL == "" {
 		dbURL = "postgres://tsure:tsure@127.0.0.1:5432/tsure?sslmode=disable"
 	}
+	env := strings.ToLower(strings.TrimSpace(os.Getenv("TSURE_ENV")))
+	if env == "" {
+		env = "dev"
+	}
 
 	return config{
-		Addr:        addr,
-		DatabaseURL: dbURL,
+		Addr:         addr,
+		DatabaseURL:  dbURL,
+		CSRFKey:      deriveSecret("CSRF_SECRET", 32),
+		JWTKey:       deriveSecret("JWT_SECRET", 32),
+		SessionTTL:   12 * time.Hour,
+		JWTTTL:       8 * time.Hour,
+		SecureCookie: env == "prod" || env == "production",
 	}
+}
+
+// deriveSecret le um segredo do ambiente e o expande para o tamanho fixo
+// (SHA-256). Em dev, se a variavel nao existir, gera um aleatorio com
+// aviso  trocar entre reinicios invalida sessoes/JWTs.
+func deriveSecret(name string, size int) []byte {
+	raw := strings.TrimSpace(os.Getenv(name))
+	if raw == "" {
+		b := make([]byte, size)
+		if _, err := rand.Read(b); err != nil {
+			log.Fatalf("gerar segredo %s: %v", name, err)
+		}
+		sum := sha256.Sum256(b)
+		log.Printf("AVISO: %s nao definido; gerado em memoria (hash=%s). Defina em producao.", name, hex.EncodeToString(sum[:6]))
+		return b
+	}
+	sum := sha256.Sum256([]byte(raw))
+	return sum[:size]
 }
 
 func (a *app) handleIndex(w http.ResponseWriter, r *http.Request) {
@@ -136,14 +228,14 @@ func (a *app) handleIndex(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	now := time.Now()
-	a.render(w, "index", pageData{
-		Title:           "tsure | ERP de leasing para eventos",
-		Today:           now.Format("02 Jan 2006"),
-		DefaultDate:     now.Add(48 * time.Hour).Format("2006-01-02"),
-		DefaultVehicle:  "Van Operacional - Placa TST-1001",
-		DefaultCrewSize: 4,
-	})
+	user, _ := middleware.UserFromContext(r.Context())
+	data := pageData{
+		Title:     "tsure | ERP de locacoes",
+		Today:     time.Now().Format("02 Jan 2006"),
+		User:      user,
+		CSRFField: middleware.CSRFTemplateTag(r).(template.HTML),
+	}
+	a.render(w, "dashboard", data)
 }
 
 func (a *app) handleOrders(w http.ResponseWriter, r *http.Request) {
@@ -152,29 +244,28 @@ func (a *app) handleOrders(w http.ResponseWriter, r *http.Request) {
 		a.renderOrdersPanel(w, r)
 	case http.MethodPost:
 		if err := r.ParseForm(); err != nil {
-			http.Error(w, "invalid form data", http.StatusBadRequest)
+			http.Error(w, "form invalido", http.StatusBadRequest)
 			return
 		}
-
 		crewSize, err := strconv.Atoi(strings.TrimSpace(r.FormValue("crewSize")))
 		if err != nil {
 			http.Error(w, "equipe invalida", http.StatusBadRequest)
 			return
 		}
-
-		if err := a.store.Create(
+		if _, err := a.store.Create(
 			r.Context(),
 			r.FormValue("customerName"),
 			r.FormValue("eventName"),
 			r.FormValue("eventCity"),
 			r.FormValue("eventDate"),
+			r.FormValue("installDate"),
+			r.FormValue("returnDate"),
 			r.FormValue("vehicleLabel"),
 			crewSize,
 		); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-
 		a.renderOrdersPanel(w, r)
 	default:
 		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
@@ -187,10 +278,9 @@ func (a *app) handleOrderByID(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-
 	switch r.Method {
 	case http.MethodPut:
-		if err := a.store.AdvanceStatus(r.Context(), id); err != nil {
+		if _, err := a.store.AdvanceStatus(r.Context(), id); err != nil {
 			if errors.Is(err, orders.ErrNotFound) {
 				http.NotFound(w, r)
 				return
@@ -198,7 +288,6 @@ func (a *app) handleOrderByID(w http.ResponseWriter, r *http.Request) {
 			a.internalError(w, err)
 			return
 		}
-
 		a.renderOrdersPanel(w, r)
 	case http.MethodDelete:
 		if err := a.store.Delete(r.Context(), id); err != nil {
@@ -209,7 +298,6 @@ func (a *app) handleOrderByID(w http.ResponseWriter, r *http.Request) {
 			a.internalError(w, err)
 			return
 		}
-
 		a.renderOrdersPanel(w, r)
 	default:
 		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
@@ -217,24 +305,15 @@ func (a *app) handleOrderByID(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *app) renderOrdersPanel(w http.ResponseWriter, r *http.Request) {
-	data, err := a.dashboard(r.Context())
+	items, err := a.store.List(r.Context(), "")
 	if err != nil {
 		a.internalError(w, err)
 		return
 	}
-	a.render(w, "orders-panel", data)
-}
-
-func (a *app) dashboard(ctx context.Context) (dashboardData, error) {
-	items, err := a.store.List(ctx)
-	if err != nil {
-		return dashboardData{}, err
-	}
-
-	return dashboardData{
-		Orders:  items,
-		Summary: orders.BuildSummary(items),
-	}, nil
+	a.render(w, "orders-panel", map[string]any{
+		"Orders":  items,
+		"Summary": orders.BuildSummary(items),
+	})
 }
 
 func (a *app) render(w http.ResponseWriter, name string, data any) {
@@ -269,9 +348,7 @@ func logRequests(next http.Handler) http.Handler {
 	})
 }
 
-func formatDateBR(value time.Time) string {
-	return value.Format("02/01/2006")
-}
+func formatDateBR(value time.Time) string { return value.Format("02/01/2006") }
 
 func formatMoneyBRL(value float64) string {
 	reais := int64(math.Round(value * 100))
@@ -280,7 +357,6 @@ func formatMoneyBRL(value float64) string {
 	if centavos < 0 {
 		centavos = -centavos
 	}
-
 	intPart := strconv.FormatInt(inteiro, 10)
 	if len(intPart) > 3 {
 		var groups []string
@@ -291,6 +367,5 @@ func formatMoneyBRL(value float64) string {
 		groups = append([]string{intPart}, groups...)
 		intPart = strings.Join(groups, ".")
 	}
-
 	return fmt.Sprintf("R$ %s,%02d", intPart, centavos)
 }

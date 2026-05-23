@@ -1,0 +1,103 @@
+{{define "dashboard"}}
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{{.Title}}</title>
+    <link rel="icon" href="/static/favicon.ico" type="image/png" />
+    <link rel="stylesheet" href="/static/style.css" />
+    <script src="https://unpkg.com/htmx.org@2.0.6"></script>
+  </head>
+  <body>
+    <header class="topnav">
+      <div class="topnav-brand">
+        <strong>tsure</strong>
+        <span>ERP de locacoes</span>
+      </div>
+      <nav class="topnav-tabs" aria-label="Modulos">
+        <a href="#comercial">Comercial</a>
+        <a href="#operacao">Operacao</a>
+        <a href="#financeiro">Financeiro</a>
+        <a href="#fiscal">Fiscal</a>
+        <a href="#recursos">Recursos</a>
+        <a href="#admin">Administracao</a>
+      </nav>
+      <div class="topnav-user">
+        <span class="user-pill" title="{{.User.Email}}">
+          <strong>{{.User.Nome}}</strong>
+          <small>{{.User.Papel}}</small>
+        </span>
+        <form method="post" action="/logout">
+          {{.CSRFField}}
+          <button type="submit" class="link-button">Sair</button>
+        </form>
+      </div>
+    </header>
+
+    <main class="dashboard">
+      <section class="hero">
+        <p class="eyebrow">Operacao do dia</p>
+        <h1>Painel central  {{.Today}}</h1>
+        <p>Acompanhamento de propostas, agenda, equipes, frota, estoque e financeiro.</p>
+      </section>
+
+      <section class="modules" aria-label="Modulos do ERP">
+        <article class="module-card" id="comercial">
+          <h2>Comercial</h2>
+          <p>Clientes, contatos, orcamentos, aprovacoes e conversao em OS.</p>
+          <ul>
+            <li><a href="/clientes">Clientes</a></li>
+            <li><a href="/orcamentos">Orcamentos</a></li>
+          </ul>
+        </article>
+
+        <article class="module-card" id="operacao">
+          <h2>Operacao</h2>
+          <p>Agenda, ordens de servico, instalacoes, retiradas e ocorrencias.</p>
+          <ul>
+            <li><a href="/orders">Ordens de servico</a></li>
+            <li><a href="/agenda">Agenda</a></li>
+          </ul>
+        </article>
+
+        <article class="module-card" id="financeiro">
+          <h2>Financeiro</h2>
+          <p>Contas a receber, recebimentos, saldos e inadimplencia.</p>
+          <ul>
+            <li><a href="/financeiro/contas-receber">Contas a receber</a></li>
+            <li><a href="/financeiro/recebimentos">Recebimentos</a></li>
+          </ul>
+        </article>
+
+        <article class="module-card" id="fiscal">
+          <h2>Fiscal</h2>
+          <p>Documentos fiscais, emissao, cancelamento e reemissao.</p>
+          <ul>
+            <li><a href="/fiscal/documentos">Documentos</a></li>
+          </ul>
+        </article>
+
+        <article class="module-card" id="recursos">
+          <h2>Recursos</h2>
+          <p>Funcionarios, escalas, ponto, localizacao, frota e inventario.</p>
+          <ul>
+            <li><a href="/funcionarios">Funcionarios</a></li>
+            <li><a href="/frota">Frota</a></li>
+            <li><a href="/inventario">Inventario</a></li>
+          </ul>
+        </article>
+
+        <article class="module-card" id="admin">
+          <h2>Administracao</h2>
+          <p>Usuarios, perfis, permissoes, parametros e auditoria.</p>
+          <ul>
+            <li><a href="/admin/usuarios">Usuarios</a></li>
+            <li><a href="/admin/auditoria">Logs de auditoria</a></li>
+          </ul>
+        </article>
+      </section>
+    </main>
+  </body>
+</html>
+{{end}}

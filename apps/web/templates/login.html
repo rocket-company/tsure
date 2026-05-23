@@ -1,0 +1,48 @@
+{{define "login"}}
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{{.Title}}</title>
+    <link rel="icon" href="/static/favicon.ico" type="image/png" />
+    <link rel="stylesheet" href="/static/style.css" />
+  </head>
+  <body class="login-body">
+    <main class="login-shell">
+      <section class="login-card">
+        <header>
+          <p class="eyebrow">tsure | ERP de locacoes</p>
+          <h1>Entrar</h1>
+          <p>Use suas credenciais de operacao.</p>
+        </header>
+
+        {{if .Error}}
+        <div class="login-alert" role="alert">{{.Error}}</div>
+        {{end}}
+
+        <form method="post" action="/login" class="login-form" autocomplete="on">
+          {{.CSRFField}}
+          <input type="hidden" name="next" value="{{.Next}}" />
+
+          <label>
+            <span>Login ou e-mail</span>
+            <input type="text" name="login" required autofocus />
+          </label>
+
+          <label>
+            <span>Senha</span>
+            <input type="password" name="password" required />
+          </label>
+
+          <button type="submit" class="login-button">Entrar</button>
+        </form>
+
+        <footer class="login-foot">
+          <small>Acesso restrito. Contas e permissoes administradas pelo painel.</small>
+        </footer>
+      </section>
+    </main>
+  </body>
+</html>
+{{end}}

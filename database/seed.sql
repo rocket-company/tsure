@@ -1,53 +1,28 @@
-INSERT INTO service_orders (
-	code,
-	customer_name,
-	event_name,
-	event_city,
-	event_date,
-	status,
-	crew_size,
-	vehicle_label,
-	inventory_summary,
-	total_amount,
-	balance_due
-)
-VALUES
-	(
-		'OS-2026-001',
-		'Casa Aurora Eventos',
-		'Feira de Noivas Primavera',
-		'Cuiaba',
-		CURRENT_DATE + INTERVAL '2 days',
-		'agendado',
-		6,
-		'VUC 3/4 - Placa TSR-2041',
-		'Palco modular, 120 cadeiras Tiffany, kit iluminacao cenario',
-		18500.00,
-		9250.00
-	),
-	(
-		'OS-2026-002',
-		'Grupo Pantanal Experience',
-		'Convencao de Franqueados',
-		'Varzea Grande',
-		CURRENT_DATE,
-		'em_execucao',
-		10,
-		'Truck BaU - Placa TSR-8830',
-		'Painel LED P3, praticaveis, sonorizacao completa',
-		42750.00,
-		0.00
-	),
-	(
-		'OS-2026-003',
-		'Instituto Terra Viva',
-		'Mutirao de Saude Corporativa',
-		'Rondonopolis',
-		CURRENT_DATE + INTERVAL '5 days',
-		'orcamento',
-		4,
-		'Van Operacional - Placa TSR-1108',
-		'Tendas 10x10, climatizadores, mobiliario lounge',
-		13200.00,
-		13200.00
-	);
+-- =============================================================================
+-- Seed minimo para dev. Roda APOS schema.sql.
+-- O usuario admin nao e criado aqui: a aplicacao Go faz bootstrap do admin
+-- no startup (apps/web/internal/auth) usando bcrypt em tempo de execucao.
+-- Defina ADMIN_PASSWORD no ambiente; padrao "tsure-admin" se nao informado.
+-- =============================================================================
+
+INSERT INTO classificacoes_servico (codigo, descricao, ordem) VALUES
+    ('palco',         'Palco',              1),
+    ('tenda',         'Tenda',              2),
+    ('sonorizacao',   'Sonorizacao',        3),
+    ('iluminacao',    'Iluminacao',         4),
+    ('grupo_gerador', 'Grupo Gerador',      5),
+    ('mesas_cadeiras','Mesas e Cadeiras',   6),
+    ('banheiros',     'Banheiros',          7),
+    ('climatizador',  'Climatizador',       8),
+    ('caixa_termica', 'Caixa Termica',      9),
+    ('estrutura',     'Estrutura',         10),
+    ('extras',        'Extras',            11)
+ON CONFLICT (codigo) DO NOTHING;
+
+INSERT INTO motivos_cancelamento (codigo, descricao) VALUES
+    ('cliente_desistiu',  'Cliente desistiu'),
+    ('chuva',             'Condicoes climaticas'),
+    ('falta_pagamento',   'Falta de pagamento'),
+    ('reagendado',        'Reagendado para outra data'),
+    ('forca_maior',       'Forca maior')
+ON CONFLICT (codigo) DO NOTHING;
