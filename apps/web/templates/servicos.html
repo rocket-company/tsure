@@ -1,0 +1,227 @@
+{{define "servicos"}}
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{{.Title}}</title>
+    <link rel="icon" href="/static/favicon.ico" type="image/png" />
+    <link rel="stylesheet" href="/static/style.css" />
+    <script src="https://unpkg.com/htmx.org@2.0.6"></script>
+    <script src="https://unpkg.com/htmx-ext-preload@2.1.0/preload.js"></script>
+  </head>
+  <body hx-ext="preload" hx-boost="true">
+    <header class="topnav">
+      <div class="topnav-brand">
+        <a href="/" style="color:inherit;text-decoration:none"><strong>tsure</strong></a>
+        <span>Cadastro de Servicos</span>
+      </div>
+      <nav class="topnav-tabs" aria-label="Modulos">
+        <a href="/" preload="mouseover">Dashboard</a>
+        <a href="/clientes" preload="mouseover">Clientes</a>
+        <a href="/servicos" class="active" preload="mouseover">Servicos</a>
+        <a href="/agenda" preload="mouseover">Agenda (OS)</a>
+      </nav>
+      <div class="topnav-user">
+        <span class="user-pill" title="{{.User.Email}}">
+          <strong>{{.User.Nome}}</strong>
+          <small>{{.User.Papel}}</small>
+        </span>
+        <form method="post" action="/logout">
+          {{.CSRFField}}
+          <button type="submit" class="link-button">Sair</button>
+        </form>
+      </div>
+    </header>
+
+    <main class="clientes-shell">
+      <aside class="clientes-list">
+        <div class="clientes-list__head">
+          <h2>Servicos cadastrados</h2>
+          <input
+            type="search"
+            id="servico-search"
+            name="q"
+            placeholder="Pesquisar por descricao ou codigo..."
+            value="{{.Query}}"
+            hx-get="/servicos/rows"
+            hx-trigger="keyup changed delay:300ms, search"
+            hx-target="#servicos-tbody"
+            hx-swap="innerHTML"
+          />
+        </div>
+
+        <div class="clientes-table-wrap">
+          <table class="clientes-table">
+            <thead>
+              <tr>
+                <th style="width:80px">Cod.</th>
+                <th>Descricao</th>
+                <th>Classificacao</th>
+                <th>Valor</th>
+              </tr>
+            </thead>
+            <tbody id="servicos-tbody">
+              {{template "servicos-rows-inner" .}}
+            </tbody>
+          </table>
+        </div>
+      </aside>
+
+      <section class="clientes-form-wrap">
+        {{template "servicos-form" .}}
+      </section>
+    </main>
+
+    <script>
+    (function () {
+      const already = window.__tsureServicosBound === true;
+      window.__tsureServicosBound = true;
+      if (already) return;
+
+      document.body.addEventListener("click", (e) => {
+        const t = e.target.closest("[data-action]");
+        if (!t) return;
+        if (t.dataset.action === "focar-busca") {
+          const i = document.querySelector("#servico-search");
+          if (i) { i.focus(); i.select(); }
+        }
+        if (t.dataset.action === "fechar") {
+          window.location.href = "/";
+        }
+      });
+    })();
+    </script>
+  </body>
+</html>
+{{end}}
+
+{{define "servicos-rows"}}{{template "servicos-rows-inner" .}}{{end}}
+
+{{define "servicos-rows-inner"}}
+{{if .Servicos}}
+  {{range .Servicos}}
+  <tr
+    class="cliente-row {{if not .Ativo}}is-inactive{{end}}"
+    hx-get="/servicos/{{.ID}}/edit"
+    hx-target="#servico-form"
+    hx-swap="outerHTML"
+    tabindex="0"
+  >
+    <td><strong>{{.Codigo}}</strong></td>
+    <td>{{.Descricao}}</td>
+    <td>
+      {{if .ClassificacaoDescricao}}
+        <span class="badge badge--neutral">{{.ClassificacaoDescricao}}</span>
+      {{else}}
+        <span class="badge badge--neutral">-</span>
+      {{end}}
+    </td>
+    <td>{{.ValorFormatado}}</td>
+  </tr>
+  {{end}}
+{{else}}
+  <tr><td colspan="4" class="clientes-empty">
+    {{if .Query}}Nenhum servico encontrado para "{{.Query}}".{{else}}Nenhum servico cadastrado.{{end}}
+  </td></tr>
+{{end}}
+{{end}}
+
+{{define "servicos-form"}}
+<form
+  id="servico-form"
+  class="cliente-form"
+  method="post"
+  action="{{if .IsNew}}/servicos{{else}}/servicos/{{.Servico.ID}}{{end}}"
+  hx-post="{{if .IsNew}}/servicos{{else}}/servicos/{{.Servico.ID}}{{end}}"
+  hx-target="#servico-form"
+  hx-swap="outerHTML"
+>
+  {{.CSRFField}}
+
+  {{if .Error}}<div class="form-alert" role="alert">{{.Error}}</div>{{end}}
+
+  <header class="cliente-form__head">
+    <div>
+      <p class="eyebrow">{{if .IsNew}}Novo servico{{else}}Editando servico{{end}}</p>
+      <h1>{{if .Servico.Descricao}}{{.Servico.Descricao}}{{else}}Cadastro de servico{{end}}</h1>
+    </div>
+    <div class="cliente-actions">
+      <button type="button" class="btn btn-ghost" data-action="focar-busca">Localizar</button>
+      <button type="button" class="btn btn-ghost"
+              hx-get="/servicos/new" hx-target="#servico-form" hx-swap="outerHTML">Novo</button>
+      <button type="submit" class="btn btn-primary" {{if .IsNew}}disabled{{end}}>Salvar alteracao</button>
+      <button type="submit" class="btn btn-primary" {{if not .IsNew}}style="display:none"{{end}}>Gravar</button>
+      <button type="button" class="btn btn-ghost" data-action="fechar">Fechar</button>
+    </div>
+  </header>
+
+  <div class="form-grid">
+    <label class="field field-sm">
+      <span>Cod. Servico</span>
+      <input type="text" name="codigo" value="{{.Servico.Codigo}}" maxlength="40"
+             placeholder="{{if .IsNew}}auto{{else}}-{{end}}" />
+    </label>
+
+    <label class="field field-lg">
+      <span>Descricao do servico</span>
+      <input type="text" name="descricao" value="{{.Servico.Descricao}}" required maxlength="200" />
+    </label>
+
+    <label class="field field-md">
+      <span>Classificacao</span>
+      <select name="classificacao_id">
+        <option value=""></option>
+        {{$selID := ""}}{{if .Servico.ClassificacaoID}}{{$selID = .Servico.ClassificacaoID.String}}{{end}}
+        {{range .Classificacoes}}
+          <option value="{{.ID}}" {{if eq $selID .ID.String}}selected{{end}}>{{.Descricao}}</option>
+        {{end}}
+      </select>
+    </label>
+
+    <label class="field field-sm">
+      <span>Unidade padrao</span>
+      <select name="unidade_padrao">
+        {{$u := .Servico.UnidadePadrao}}
+        <option value="DIARIA" {{if eq $u "DIARIA"}}selected{{end}}>DIARIA</option>
+        <option value="UNIDADE" {{if eq $u "UNIDADE"}}selected{{end}}>UNIDADE</option>
+        <option value="METRO" {{if eq $u "METRO"}}selected{{end}}>METRO</option>
+        <option value="HORA" {{if eq $u "HORA"}}selected{{end}}>HORA</option>
+      </select>
+    </label>
+
+    <label class="field field-sm">
+      <span>Valor referencia (R$)</span>
+      <input type="text" name="valor_referencia" value="{{printf "%.2f" .Servico.ValorReferencia}}" />
+    </label>
+
+    <label class="field field-sm">
+      <span>Status</span>
+      <label class="toggle" style="padding-top:6px">
+        <input type="checkbox" name="ativo" {{if .Servico.Ativo}}checked{{end}} />
+        <span class="toggle-pill toggle-pill--ativo">{{if .Servico.Ativo}}Ativo{{else}}Inativo{{end}}</span>
+      </label>
+    </label>
+  </div>
+
+  {{if not .IsNew}}
+  <footer class="cliente-form__foot">
+    <button
+      type="button"
+      class="btn btn-danger-ghost"
+      hx-post="/servicos/{{.Servico.ID}}/delete"
+      hx-target="#servico-form"
+      hx-swap="outerHTML"
+      hx-confirm="Inativar este servico?"
+    >Inativar</button>
+  </footer>
+  {{end}}
+</form>
+{{end}}
+
+{{define "servicos-form-with-rows"}}
+{{template "servicos-form" .}}
+<tbody id="servicos-tbody" hx-swap-oob="true">
+  {{template "servicos-rows-inner" (svRowsData .Servicos "")}}
+</tbody>
+{{end}}

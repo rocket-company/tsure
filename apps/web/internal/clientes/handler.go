@@ -18,11 +18,20 @@ import (
 type Handler struct {
 	Store     *Store
 	Templates render.Executor
+	// OnMutate, se setado, e invocado apos qualquer write bem-sucedido.
+	// Util para invalidar caches em outros modulos (ex: dropdown da agenda).
+	OnMutate func()
 }
 
 // NewHandler constroi um Handler.
 func NewHandler(store *Store, tmpl render.Executor) *Handler {
 	return &Handler{Store: store, Templates: tmpl}
+}
+
+func (h *Handler) notifyMutate() {
+	if h.OnMutate != nil {
+		h.OnMutate()
+	}
 }
 
 // PageData e o ViewModel da pagina /clientes.
@@ -166,6 +175,7 @@ func (h *Handler) handleCreate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	c.ID = id
+	h.notifyMutate()
 	h.respondAfterWrite(w, r, c, false)
 }
 
@@ -187,6 +197,7 @@ func (h *Handler) handleUpdate(w http.ResponseWriter, r *http.Request, id uuid.U
 		return
 	}
 	c.ID = id
+	h.notifyMutate()
 	h.respondAfterWrite(w, r, c, false)
 }
 
@@ -200,6 +211,7 @@ func (h *Handler) handleDelete(w http.ResponseWriter, r *http.Request, id uuid.U
 		h.serverError(w, err)
 		return
 	}
+	h.notifyMutate()
 	// Retorna lista atualizada + formulario zerado (HTMX OOB)
 	h.respondAfterWrite(w, r, Cliente{Tipo: TipoPJ}, true)
 }

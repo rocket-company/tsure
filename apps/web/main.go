@@ -23,6 +23,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 
+	"tsure/apps/web/internal/agenda"
 	"tsure/apps/web/internal/auth"
 	"tsure/apps/web/internal/budgets"
 	"tsure/apps/web/internal/clientes"
@@ -31,6 +32,7 @@ import (
 	"tsure/apps/web/internal/middleware"
 	"tsure/apps/web/internal/orders"
 	"tsure/apps/web/internal/render"
+	"tsure/apps/web/internal/servicos"
 )
 
 //go:embed templates/*.html templates/partials/*.html public/*
@@ -108,6 +110,12 @@ func main() {
 		"rowsData": func(items []clientes.Cliente, query string) clientes.RowsData {
 			return clientes.RowsData{Clientes: items, Query: query}
 		},
+		"svRowsData": func(items []servicos.Servico, query string) servicos.RowsData {
+			return servicos.RowsData{Servicos: items, Query: query}
+		},
+		"agRowsData": func(items []agenda.Agendamento, query string) agenda.RowsData {
+			return agenda.RowsData{Itens: items, Query: query}
+		},
 	}
 
 	var tmpl render.Executor
@@ -137,6 +145,16 @@ func main() {
 
 	clientesStore := clientes.NewStore(pool)
 	clientesHandler := clientes.NewHandler(clientesStore, tmpl)
+
+	servicosStore := servicos.NewStore(pool)
+	servicosHandler := servicos.NewHandler(servicosStore, tmpl)
+
+	agendaStore := agenda.NewStore(pool)
+	agendaHandler := agenda.NewHandler(agendaStore, tmpl)
+
+	// Mutacao em clientes invalida o cache do dropdown da agenda
+	// (e o mesmo principio quando criarmos /funcionarios).
+	clientesHandler.OnMutate = agendaStore.InvalidateRefs
 
 	a := &app{store: ordersStore, templates: tmpl}
 
@@ -173,16 +191,10 @@ func main() {
 	// ---- Rotas web protegidas
 	mux.Handle("/logout", webAuth.Required(http.HandlerFunc(authHandler.HandleLogout)))
 	mux.Handle("/", webAuth.Required(http.HandlerFunc(a.handleIndex)))
-	mux.Handle("/orders", webAuth.Required(
-		middleware.RequireAnyPermission("agenda.read", "agenda.write")(
-			http.HandlerFunc(a.handleOrders),
-		),
-	))
-	mux.Handle("/orders/", webAuth.Required(
-		middleware.RequireAnyPermission("agenda.read", "agenda.write")(
-			http.HandlerFunc(a.handleOrderByID),
-		),
-	))
+	// /orders e o painel legado v0. A Ordem de Servico canonica vive em
+	// /agenda; redirecionamos para evitar manter duas UIs paralelas.
+	mux.Handle("/orders", http.RedirectHandler("/agenda", http.StatusMovedPermanently))
+	mux.Handle("/orders/", http.RedirectHandler("/agenda", http.StatusMovedPermanently))
 
 	// ---- Clientes (SSR + HTMX)
 	clientesRead := middleware.RequireAnyPermission("clientes.read", "clientes.write")
@@ -202,6 +214,46 @@ func main() {
 			return
 		}
 		clientesRead(http.HandlerFunc(clientesHandler.ServeByID)).ServeHTTP(w, r)
+	})))
+
+	// ---- Servicos (catalogo de locacao)
+	servicosRead := middleware.RequireAnyPermission("estoque.read", "estoque.write", "agenda.read", "agenda.write")
+	servicosWrite := middleware.RequirePermission("estoque.write")
+	mux.Handle("/servicos", webAuth.Required(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPost {
+			servicosWrite(http.HandlerFunc(servicosHandler.ServeIndex)).ServeHTTP(w, r)
+			return
+		}
+		servicosRead(http.HandlerFunc(servicosHandler.ServeIndex)).ServeHTTP(w, r)
+	})))
+	mux.Handle("/servicos/rows", webAuth.Required(servicosRead(http.HandlerFunc(servicosHandler.ServeRows))))
+	mux.Handle("/servicos/new", webAuth.Required(servicosWrite(http.HandlerFunc(servicosHandler.ServeNew))))
+	mux.Handle("/servicos/", webAuth.Required(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPost {
+			servicosWrite(http.HandlerFunc(servicosHandler.ServeByID)).ServeHTTP(w, r)
+			return
+		}
+		servicosRead(http.HandlerFunc(servicosHandler.ServeByID)).ServeHTTP(w, r)
+	})))
+
+	// ---- Agenda (OS / Agendamento de Servicos)
+	agendaRead := middleware.RequireAnyPermission("agenda.read", "agenda.write")
+	agendaWrite := middleware.RequirePermission("agenda.write")
+	mux.Handle("/agenda", webAuth.Required(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPost {
+			agendaWrite(http.HandlerFunc(agendaHandler.ServeIndex)).ServeHTTP(w, r)
+			return
+		}
+		agendaRead(http.HandlerFunc(agendaHandler.ServeIndex)).ServeHTTP(w, r)
+	})))
+	mux.Handle("/agenda/rows", webAuth.Required(agendaRead(http.HandlerFunc(agendaHandler.ServeRows))))
+	mux.Handle("/agenda/novo", webAuth.Required(agendaWrite(http.HandlerFunc(agendaHandler.ServeNew))))
+	mux.Handle("/agenda/", webAuth.Required(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPost {
+			agendaWrite(http.HandlerFunc(agendaHandler.ServeByID)).ServeHTTP(w, r)
+			return
+		}
+		agendaRead(http.HandlerFunc(agendaHandler.ServeByID)).ServeHTTP(w, r)
 	})))
 
 	// ---- API JSON (mobile)  JWT bearer, sem CSRF

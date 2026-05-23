@@ -1,0 +1,476 @@
+{{define "agenda"}}
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{{.Title}}</title>
+    <link rel="icon" href="/static/favicon.ico" type="image/png" />
+    <link rel="stylesheet" href="/static/style.css" />
+    <script src="https://unpkg.com/htmx.org@2.0.6"></script>
+    <script src="https://unpkg.com/htmx-ext-preload@2.1.0/preload.js"></script>
+  </head>
+  <body hx-ext="preload" hx-boost="true">
+    <header class="topnav">
+      <div class="topnav-brand">
+        <a href="/" style="color:inherit;text-decoration:none"><strong>tsure</strong></a>
+        <span>Agendamento de Servicos</span>
+      </div>
+      <nav class="topnav-tabs" aria-label="Modulos">
+        <a href="/" preload="mouseover">Dashboard</a>
+        <a href="/clientes" preload="mouseover">Clientes</a>
+        <a href="/servicos" preload="mouseover">Servicos</a>
+        <a href="/agenda" class="active" preload="mouseover">Agenda (OS)</a>
+      </nav>
+      <div class="topnav-user">
+        <span class="user-pill" title="{{.User.Email}}">
+          <strong>{{.User.Nome}}</strong>
+          <small>{{.User.Papel}}</small>
+        </span>
+        <form method="post" action="/logout">
+          {{.CSRFField}}
+          <button type="submit" class="link-button">Sair</button>
+        </form>
+      </div>
+    </header>
+
+    <main class="clientes-shell">
+      <aside class="clientes-list">
+        <div class="clientes-list__head">
+          <h2>Ordens de Servico</h2>
+          <input
+            type="search"
+            id="agenda-search"
+            name="q"
+            placeholder="Buscar por cliente ou numero da OS..."
+            value="{{.Query}}"
+            hx-get="/agenda/rows"
+            hx-trigger="keyup changed delay:300ms, search"
+            hx-target="#agenda-tbody"
+            hx-swap="innerHTML"
+          />
+        </div>
+
+        <div class="clientes-table-wrap">
+          <table class="clientes-table">
+            <thead>
+              <tr>
+                <th>OS</th>
+                <th>Cliente</th>
+                <th>Data evento</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="agenda-tbody">
+              {{template "agenda-rows-inner" .}}
+            </tbody>
+          </table>
+        </div>
+      </aside>
+
+      <section class="clientes-form-wrap">
+        {{template "agenda-form" .}}
+      </section>
+    </main>
+
+    {{template "agenda-script" .}}
+  </body>
+</html>
+{{end}}
+
+{{/* ------------------------------------------------------------------ */}}
+
+{{define "agenda-rows"}}{{template "agenda-rows-inner" .}}{{end}}
+
+{{define "agenda-rows-inner"}}
+{{if .Itens}}
+  {{range .Itens}}
+  <tr
+    class="cliente-row"
+    hx-get="/agenda/{{.ID}}/edit"
+    hx-target="#agenda-form"
+    hx-swap="outerHTML"
+    tabindex="0"
+  >
+    <td><strong>{{.NumeroFormatado}}</strong></td>
+    <td>{{.ClienteNome}}</td>
+    <td>{{if .DataEvento}}{{.DataEvento.Format "02/01/2006"}}{{else}}-{{end}}</td>
+    <td><span class="badge badge--neutral">{{.StatusLabel}}</span></td>
+  </tr>
+  {{end}}
+{{else}}
+  <tr><td colspan="4" class="clientes-empty">
+    {{if .Query}}Nenhum agendamento encontrado para "{{.Query}}".{{else}}Nenhum agendamento ainda.{{end}}
+  </td></tr>
+{{end}}
+{{end}}
+
+{{/* ------------------------------------------------------------------ */}}
+
+{{define "agenda-form"}}
+<form
+  id="agenda-form"
+  class="cliente-form"
+  method="post"
+  action="{{if .IsNew}}/agenda{{else}}/agenda/{{.Agendamento.ID}}{{end}}"
+  hx-post="{{if .IsNew}}/agenda{{else}}/agenda/{{.Agendamento.ID}}{{end}}"
+  hx-target="#agenda-form"
+  hx-swap="outerHTML"
+>
+  {{.CSRFField}}
+
+  {{if .Error}}<div class="form-alert" role="alert">{{.Error}}</div>{{end}}
+
+  <header class="cliente-form__head">
+    <div>
+      <p class="eyebrow">
+        {{if .IsNew}}Novo agendamento{{else}}OS {{.Agendamento.NumeroFormatado}}{{end}}
+      </p>
+      <h1>{{if .Agendamento.DescricaoEvento}}{{.Agendamento.DescricaoEvento}}{{else}}Agendar evento{{end}}</h1>
+    </div>
+    <div class="cliente-actions">
+      <button type="button" class="btn btn-ghost" data-action="focar-busca">Localizar</button>
+      <button type="button" class="btn btn-ghost"
+              hx-get="/agenda/novo" hx-target="#agenda-form" hx-swap="outerHTML">Novo</button>
+      <button type="submit" class="btn btn-primary">{{if .IsNew}}Agendar{{else}}Salvar alteracao{{end}}</button>
+      <button type="button" class="btn btn-ghost" data-action="fechar">Fechar</button>
+    </div>
+  </header>
+
+  <!-- Bloco 1: Identificacao e Status -->
+  <div class="form-grid">
+    <label class="field field-lg">
+      <span>Cliente</span>
+      <select name="cliente_id" id="agenda-cliente" required>
+        <option value=""></option>
+        {{$selID := ""}}{{if .Agendamento.ClienteID}}{{$selID = .Agendamento.ClienteID.String}}{{end}}
+        {{range .Clientes}}
+          <option value="{{.ID}}"
+            {{if eq $selID .ID.String}}selected{{end}}
+            data-logradouro="{{.Logradouro}}"
+            data-numero="{{.Numero}}"
+            data-complemento="{{.Complemento}}"
+            data-bairro="{{.Bairro}}"
+            data-cidade="{{.Cidade}}"
+            data-uf="{{.UF}}"
+            data-endereco="{{.EnderecoCompleto}}"
+          >{{.Nome}}</option>
+        {{end}}
+      </select>
+    </label>
+
+    <label class="field field-md">
+      <span>Quem contratou evento</span>
+      <select name="quem_contratou_id">
+        <option value=""></option>
+        {{$qcID := ""}}{{if .Agendamento.QuemContratouID}}{{$qcID = .Agendamento.QuemContratouID.String}}{{end}}
+        {{range .Funcionarios}}
+          <option value="{{.ID}}" {{if eq $qcID .ID.String}}selected{{end}}>
+            {{.Nome}}{{if .Cargo}}  {{.Cargo}}{{end}}
+          </option>
+        {{end}}
+      </select>
+    </label>
+
+    <label class="field field-md">
+      <span>Status agendamento</span>
+      <select name="status" id="agenda-status">
+        {{$st := .Agendamento.Status}}
+        <option value="orcamento" {{if eq $st "orcamento"}}selected{{end}}>Orcamento</option>
+        <option value="em_analise" {{if eq $st "em_analise"}}selected{{end}}>Em analise</option>
+        <option value="aprovado" {{if eq $st "aprovado"}}selected{{end}}>Aprovado</option>
+        <option value="agendado" {{if eq $st "agendado"}}selected{{end}}>Agendado</option>
+        <option value="em_execucao" {{if eq $st "em_execucao"}}selected{{end}}>Em execucao</option>
+        <option value="aguardando_retorno" {{if eq $st "aguardando_retorno"}}selected{{end}}>Aguardando retorno</option>
+        <option value="finalizado" {{if eq $st "finalizado"}}selected{{end}}>Finalizado</option>
+        <option value="cancelado" {{if eq $st "cancelado"}}selected{{end}}>Cancelado</option>
+      </select>
+    </label>
+  </div>
+
+  <!-- Bloco 2: Endereco do evento -->
+  <fieldset class="bloqueio-card" style="grid-template-columns:1fr">
+    <legend>Endereco cadastrado do cliente</legend>
+    <p id="endereco-cliente-display" class="address-readonly"
+       data-empty="Selecione um cliente para visualizar o endereco cadastrado.">
+      {{if .ClienteAtual.ID}}{{.ClienteAtual.EnderecoCompleto}}{{else}}Selecione um cliente para visualizar o endereco cadastrado.{{end}}
+    </p>
+
+    <label class="toggle" style="margin-top:8px">
+      <input type="checkbox" id="usar-endereco-cliente" />
+      <span class="toggle-pill toggle-pill--info">O evento ocorrera no mesmo local do cliente</span>
+    </label>
+  </fieldset>
+
+  <div class="form-grid">
+    <label class="field field-lg">
+      <span>Endereco</span>
+      <input type="text" name="local_logradouro" id="local-logradouro" value="{{.Agendamento.LocalLogradouro}}" maxlength="200" />
+    </label>
+
+    <label class="field field-xs">
+      <span>Nr</span>
+      <input type="text" name="local_numero" id="local-numero" value="{{.Agendamento.LocalNumero}}" maxlength="20" />
+    </label>
+
+    <label class="field field-md">
+      <span>Bairro</span>
+      <input type="text" name="local_bairro" id="local-bairro" value="{{.Agendamento.LocalBairro}}" maxlength="120" />
+    </label>
+
+    <label class="field field-md">
+      <span>Complemento</span>
+      <input type="text" name="local_complemento" id="local-complemento" value="{{.Agendamento.LocalComplemento}}" maxlength="120" />
+    </label>
+
+    <label class="field field-md">
+      <span>Cidade</span>
+      <input type="text" name="local_cidade" id="local-cidade" list="lista-cidades-agenda" value="{{.Agendamento.LocalCidade}}" maxlength="120" />
+      <datalist id="lista-cidades-agenda">
+        {{range .Cidades}}<option value="{{.Nome}}"></option>{{end}}
+      </datalist>
+    </label>
+
+    <label class="field field-xs">
+      <span>UF</span>
+      <select name="local_uf" id="local-uf">
+        <option value=""></option>
+        {{range .UFs}}<option value="{{.Sigla}}" {{if eq $.Agendamento.LocalUF .Sigla}}selected{{end}}>{{.Sigla}}</option>{{end}}
+      </select>
+    </label>
+  </div>
+
+  <!-- Bloco 3: Definicoes e Aprovacao -->
+  <div class="form-grid" style="margin-top:14px">
+    <label class="field field-full">
+      <span>Descricao evento</span>
+      <input type="text" name="descricao_evento" value="{{.Agendamento.DescricaoEvento}}" maxlength="240" />
+    </label>
+
+    <label class="field field-md">
+      <span>Forma de pagamento</span>
+      <select name="forma_pagamento">
+        {{$fp := .Agendamento.FormaPagamento}}
+        <option value="" {{if eq $fp ""}}selected{{end}}></option>
+        <option value="dinheiro" {{if eq $fp "dinheiro"}}selected{{end}}>Dinheiro</option>
+        <option value="cheque" {{if eq $fp "cheque"}}selected{{end}}>Cheque</option>
+        <option value="transferencia" {{if eq $fp "transferencia"}}selected{{end}}>Transferencia</option>
+        <option value="pix" {{if eq $fp "pix"}}selected{{end}}>PIX</option>
+        <option value="boleto" {{if eq $fp "boleto"}}selected{{end}}>Boleto</option>
+        <option value="cartao" {{if eq $fp "cartao"}}selected{{end}}>Cartao</option>
+      </select>
+    </label>
+
+    <label class="field field-md">
+      <span>Tipo de evento</span>
+      <select name="tipo_evento">
+        {{$te := .Agendamento.TipoEvento}}
+        <option value="particular" {{if eq $te "particular"}}selected{{end}}>Particular</option>
+        <option value="licitacao" {{if eq $te "licitacao"}}selected{{end}}>Licitacao</option>
+        <option value="cortesia" {{if eq $te "cortesia"}}selected{{end}}>Cortesia</option>
+        <option value="recorrente" {{if eq $te "recorrente"}}selected{{end}}>Recorrente</option>
+      </select>
+    </label>
+
+    <label class="field field-sm">
+      <span>Valor total (R$)</span>
+      <input type="text" name="valor_total" value="{{printf "%.2f" .Agendamento.ValorTotal}}" />
+    </label>
+  </div>
+
+  <fieldset class="bloqueio-card aprovacao-card" style="grid-template-columns:1fr 1fr 1fr;gap:12px">
+    <legend>Aprovacao</legend>
+    <label class="field">
+      <span>Data aprovacao</span>
+      <input type="date" name="data_aprovacao"
+             value="{{if .Agendamento.DataAprovacao}}{{.Agendamento.DataAprovacao.Format "2006-01-02"}}{{end}}" />
+    </label>
+    <label class="field">
+      <span>Quem aprovou</span>
+      <input type="text" value="{{.Agendamento.QuemAprovou}}" readonly disabled placeholder="usuario do sistema" />
+    </label>
+    <label class="field">
+      <span>Numero aprovacao</span>
+      <input type="text" name="numero_aprovacao" value="{{.Agendamento.NumeroAprovacao}}" maxlength="40" />
+    </label>
+  </fieldset>
+
+  <!-- Bloco 4: Responsaveis -->
+  <div class="form-grid" style="margin-top:14px">
+    <label class="field field-md">
+      <span>Nome do responsavel 1</span>
+      <input type="text" name="responsavel1_nome" value="{{.Agendamento.Responsavel1Nome}}" maxlength="200" />
+    </label>
+    <label class="field field-sm">
+      <span>Telefone 1</span>
+      <input type="text" name="responsavel1_telefone" class="mask-celular" value="{{.Agendamento.Responsavel1Telefone}}" maxlength="30" />
+    </label>
+    <label class="field field-md">
+      <span>Nome do responsavel 2</span>
+      <input type="text" name="responsavel2_nome" value="{{.Agendamento.Responsavel2Nome}}" maxlength="200" />
+    </label>
+    <label class="field field-sm">
+      <span>Telefone 2</span>
+      <input type="text" name="responsavel2_telefone" class="mask-celular" value="{{.Agendamento.Responsavel2Telefone}}" maxlength="30" />
+    </label>
+  </div>
+
+  <!-- Bloco 5: Cronograma -->
+  <div class="form-grid" style="margin-top:14px">
+    <label class="field field-sm">
+      <span>Data evento</span>
+      <input type="date" name="data_evento"
+             value="{{if .Agendamento.DataEvento}}{{.Agendamento.DataEvento.Format "2006-01-02"}}{{end}}" />
+    </label>
+    <label class="field field-sm">
+      <span>Hora evento</span>
+      <input type="time" name="hora_evento" value="{{.Agendamento.HoraEvento}}" />
+    </label>
+    <label class="field field-sm">
+      <span>Data instalacao</span>
+      <input type="date" name="data_instalacao"
+             value="{{if .Agendamento.DataInstalacao}}{{.Agendamento.DataInstalacao.Format "2006-01-02"}}{{end}}" />
+    </label>
+    <label class="field field-sm">
+      <span>Hora instalacao</span>
+      <input type="time" name="hora_instalacao" value="{{.Agendamento.HoraInstalacao}}" />
+    </label>
+
+    <label class="field field-full">
+      <span>Observacao</span>
+      <textarea name="observacoes" rows="3" maxlength="2000">{{.Agendamento.Observacoes}}</textarea>
+    </label>
+
+    <label class="field field-md">
+      <span>Finalizar agendamento</span>
+      <label class="toggle" style="padding-top:6px">
+        <input type="checkbox" name="finalizado" {{if .Agendamento.Finalizado}}checked{{end}} />
+        <span class="toggle-pill toggle-pill--info">{{if .Agendamento.Finalizado}}Finalizado{{else}}Em curso{{end}}</span>
+      </label>
+    </label>
+  </div>
+
+  {{if not .IsNew}}
+  <footer class="cliente-form__foot">
+    <button
+      type="button"
+      class="btn btn-danger-ghost"
+      hx-post="/agenda/{{.Agendamento.ID}}/delete"
+      hx-target="#agenda-form"
+      hx-swap="outerHTML"
+      hx-confirm="Cancelar este agendamento?"
+    >Cancelar OS</button>
+  </footer>
+  {{end}}
+</form>
+{{end}}
+
+{{/* ------------------------------------------------------------------ */}}
+
+{{define "agenda-form-with-rows"}}
+{{template "agenda-form" .}}
+<tbody id="agenda-tbody" hx-swap-oob="true">
+  {{template "agenda-rows-inner" (agRowsData .Itens "")}}
+</tbody>
+{{end}}
+
+{{/* ------------------------------------------------------------------ */}}
+
+{{define "agenda-script"}}
+<script>
+(function () {
+  const already = window.__tsureAgendaBound === true;
+  window.__tsureAgendaBound = true;
+
+  function onlyDigits(s) { return (s || "").replace(/\D+/g, ""); }
+  function maskCelular(v) {
+    v = onlyDigits(v).slice(0, 11);
+    return v.replace(/^(\d{2})(\d)/, "($1) $2").replace(/(\d{5})(\d{1,4})$/, "$1-$2");
+  }
+  function bindMask(input, fn) {
+    if (!input || input.__bound) return;
+    input.__bound = true;
+    input.value = fn(input.value);
+    input.addEventListener("input", () => { input.value = fn(input.value); });
+  }
+
+  function syncClienteEndereco() {
+    const sel = document.querySelector("#agenda-cliente");
+    const display = document.querySelector("#endereco-cliente-display");
+    if (!sel || !display) return null;
+    const opt = sel.options[sel.selectedIndex];
+    if (!opt || !opt.value) {
+      display.textContent = display.dataset.empty;
+      return null;
+    }
+    const endereco = opt.dataset.endereco || "Endereco nao cadastrado.";
+    display.textContent = endereco;
+    return {
+      logradouro: opt.dataset.logradouro || "",
+      numero: opt.dataset.numero || "",
+      complemento: opt.dataset.complemento || "",
+      bairro: opt.dataset.bairro || "",
+      cidade: opt.dataset.cidade || "",
+      uf: opt.dataset.uf || "",
+    };
+  }
+
+  function applyMesmoLocal() {
+    const chk = document.querySelector("#usar-endereco-cliente");
+    if (!chk) return;
+    const data = syncClienteEndereco();
+    const fields = ["logradouro", "numero", "complemento", "bairro", "cidade"];
+    fields.forEach((f) => {
+      const el = document.querySelector("#local-" + f);
+      if (!el) return;
+      if (chk.checked) {
+        el.value = data ? (data[f] || "") : "";
+        el.disabled = true;
+      } else {
+        el.disabled = false;
+      }
+    });
+    const uf = document.querySelector("#local-uf");
+    if (uf) {
+      if (chk.checked) {
+        uf.value = data ? (data.uf || "") : "";
+        uf.disabled = true;
+      } else {
+        uf.disabled = false;
+      }
+    }
+  }
+
+  function initAgendaForm() {
+    document.querySelectorAll(".mask-celular").forEach((el) => bindMask(el, maskCelular));
+    const sel = document.querySelector("#agenda-cliente");
+    if (sel) {
+      sel.addEventListener("change", () => { syncClienteEndereco(); applyMesmoLocal(); });
+      syncClienteEndereco();
+    }
+    const chk = document.querySelector("#usar-endereco-cliente");
+    if (chk) {
+      chk.addEventListener("change", applyMesmoLocal);
+    }
+  }
+
+  initAgendaForm();
+
+  if (!already) {
+    document.addEventListener("DOMContentLoaded", initAgendaForm);
+    document.body.addEventListener("htmx:afterSwap", initAgendaForm);
+    document.body.addEventListener("click", (e) => {
+      const t = e.target.closest("[data-action]");
+      if (!t) return;
+      if (t.dataset.action === "focar-busca") {
+        const i = document.querySelector("#agenda-search");
+        if (i) { i.focus(); i.select(); }
+      }
+      if (t.dataset.action === "fechar") {
+        window.location.href = "/";
+      }
+    });
+  }
+})();
+</script>
+{{end}}

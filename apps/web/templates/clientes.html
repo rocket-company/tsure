@@ -19,7 +19,8 @@
       <nav class="topnav-tabs" aria-label="Modulos">
         <a href="/" preload="mouseover">Dashboard</a>
         <a href="/clientes" class="active" preload="mouseover">Clientes</a>
-        <a href="/orders" preload="mouseover">Ordens</a>
+        <a href="/servicos" preload="mouseover">Servicos</a>
+        <a href="/agenda" preload="mouseover">Agenda (OS)</a>
       </nav>
       <div class="topnav-user">
         <span class="user-pill" title="{{.User.Email}}">
@@ -244,7 +245,8 @@
     </div>
     <div class="cliente-actions">
       {{if not .IsNew}}
-        <a class="btn btn-ghost" href="/agenda?cliente={{.Cliente.ID}}">Agendar evento</a>
+        <a class="btn btn-primary" href="/agenda/novo?cliente={{.Cliente.ID}}"
+           preload="mouseover">Novo Evento</a>
       {{end}}
       <button type="button" class="btn btn-ghost" data-action="focar-busca">Localizar</button>
       <button type="button" class="btn btn-ghost"

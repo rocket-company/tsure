@@ -1334,6 +1334,52 @@ button:hover,
 }
 .badge--ok      { background: #e6f6ed; color: #1d7a3a; }
 .badge--danger  { background: #fde7e7; color: #b32424; }
+.badge--neutral { background: #eef1f6; color: #4a566e; }
+
+.address-readonly {
+  margin: 6px 0 0;
+  padding: 10px 12px;
+  background: #f5f7fb;
+  border: 1px dashed #d4d9e3;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #4a566e;
+  min-height: 38px;
+  white-space: pre-line;
+}
+
+.aprovacao-card {
+  background: #2a3247 !important;
+  color: #f4f6fb;
+  margin-top: 18px;
+}
+.aprovacao-card legend { color: #c8d2e6 !important; }
+.aprovacao-card .field span { color: #c8d2e6; }
+.aprovacao-card .field input {
+  background: rgba(255,255,255,0.08);
+  border-color: rgba(255,255,255,0.16);
+  color: #f4f6fb;
+}
+
+.toggle-pill--ativo {
+  background: #e6f6ed;
+  color: #1d7a3a;
+}
+.toggle input:checked + .toggle-pill--ativo {
+  background: #e6f6ed; color: #1d7a3a;
+}
+.toggle input:not(:checked) + .toggle-pill--ativo {
+  background: #fde7e7; color: #b32424;
+}
+.toggle input:not(:checked) + .toggle-pill--ativo::before { background: #b32424; }
+
+.toggle-pill--info {
+  background: #e6efff;
+  color: #2a4ec9;
+}
+.toggle-pill--info::before { background: #2a4ec9; }
+
+.cliente-row.is-inactive { opacity: 0.55; }
 
 .clientes-form-wrap {
   overflow-y: auto;

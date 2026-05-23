@@ -373,9 +373,16 @@ CREATE TABLE IF NOT EXISTS agenda (
     deleted_at                  timestamptz
 );
 
+-- idempotente para bancos ja existentes
+ALTER TABLE agenda DROP COLUMN IF EXISTS quem_contratou;
+ALTER TABLE agenda ADD COLUMN IF NOT EXISTS quem_contratou_id uuid
+    REFERENCES funcionarios(id) ON DELETE SET NULL;
+ALTER TABLE agenda ADD COLUMN IF NOT EXISTS finalizado boolean NOT NULL DEFAULT FALSE;
+
 CREATE INDEX IF NOT EXISTS idx_agenda_cliente   ON agenda(cliente_id);
 CREATE INDEX IF NOT EXISTS idx_agenda_status    ON agenda(status) WHERE deleted_at IS NULL;
 CREATE INDEX IF NOT EXISTS idx_agenda_evento_dt ON agenda(data_evento) WHERE deleted_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_agenda_numero    ON agenda(numero DESC) WHERE deleted_at IS NULL;
 
 DROP TRIGGER IF EXISTS agenda_set_updated_at ON agenda;
 CREATE TRIGGER agenda_set_updated_at BEFORE UPDATE ON agenda
