@@ -27,7 +27,7 @@ rotinas de campo, checklists, apontamento de equipe e consulta rapida de OS.
 ## Requirements
 
 - Go 1.22+
-- PostgreSQL 16+
+- PostgreSQL 18+
 
 ## Run PostgreSQL
 
@@ -90,4 +90,4 @@ O repositorio deixa de ser template e passa a assumir explicitamente o produto
 - financeiro de recebiveis;
 - base para RH, fiscal e auditoria.
 
-Os documentos de produto e arquitetura estao em [docs/README.md](/var/home/notNilton/Workspace/nilbyte/tsure/docs/README.md).
+Os documentos de produto e arquitetura estao em [docs/README.md](./docs/README.md).
