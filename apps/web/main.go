@@ -24,6 +24,7 @@ import (
 	"github.com/joho/godotenv"
 
 	"tsure/apps/web/internal/agenda"
+	"tsure/apps/web/internal/api"
 	"tsure/apps/web/internal/auth"
 	"tsure/apps/web/internal/budgets"
 	"tsure/apps/web/internal/clientes"
@@ -257,8 +258,16 @@ func main() {
 	})))
 
 	// ---- API JSON (mobile)  JWT bearer, sem CSRF
-	mux.Handle("/api/auth/login", http.HandlerFunc(authHandler.APILogin))
-	mux.Handle("/api/auth/me", apiAuth.Required(http.HandlerFunc(authHandler.APIMe)))
+	mux.Handle("POST /api/auth/login", http.HandlerFunc(authHandler.APILogin))
+	mux.Handle("POST /api/auth/logout", apiAuth.Required(http.HandlerFunc(authHandler.APILogout)))
+	mux.Handle("GET /api/auth/me", apiAuth.Required(http.HandlerFunc(authHandler.APIMe)))
+
+	apiClientes := &api.ClientesHandler{Store: clientesStore}
+	mux.Handle("GET /api/clientes", apiAuth.Required(http.HandlerFunc(apiClientes.List)))
+	mux.Handle("POST /api/clientes", apiAuth.Required(http.HandlerFunc(apiClientes.Create)))
+	mux.Handle("GET /api/clientes/{id}", apiAuth.Required(http.HandlerFunc(apiClientes.Get)))
+	mux.Handle("PUT /api/clientes/{id}", apiAuth.Required(http.HandlerFunc(apiClientes.Update)))
+	mux.Handle("DELETE /api/clientes/{id}", apiAuth.Required(http.HandlerFunc(apiClientes.Delete)))
 
 	// ---- Static
 	staticFS, err := fs.Sub(embeddedAssets, "public")

@@ -141,9 +141,9 @@ func (h AuthHandler) APILogin(w http.ResponseWriter, r *http.Request) {
 	}
 	writeJSON(w, http.StatusOK, map[string]any{
 		"data": map[string]any{
-			"token":       token,
-			"token_type":  "Bearer",
-			"expires_at":  exp.UTC().Format(time.RFC3339),
+			"access_token": token,
+			"token_type":   "Bearer",
+			"expires_at":   exp.UTC().Format(time.RFC3339),
 			"user": map[string]any{
 				"id":          user.ID,
 				"nome":        user.Nome,
@@ -175,6 +175,16 @@ func (h AuthHandler) APIMe(w http.ResponseWriter, r *http.Request) {
 			"permissions": u.Permissions,
 		},
 		"message": "ok",
+		"errors":  []string{},
+	})
+}
+
+// APILogout encerra a sessao do cliente mobile. JWT e stateless: o token
+// nao e invalidado no servidor; o cliente deve descarta-lo apos esta chamada.
+func (h AuthHandler) APILogout(w http.ResponseWriter, r *http.Request) {
+	writeJSON(w, http.StatusOK, map[string]any{
+		"data":    nil,
+		"message": "sessao encerrada",
 		"errors":  []string{},
 	})
 }
