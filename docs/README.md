@@ -4,14 +4,14 @@ Documentacao funcional e tecnica do `tsure`, ERP voltado a locacoes, leasing e g
 
 ## Documentos
 
-- [ERP-LEASING.md](/var/home/notNilton/Workspace/nilbyte/tsure/docs/ERP-LEASING.md)
-- [ESPECIFICACAO-FUNCIONAL.md](/var/home/notNilton/Workspace/nilbyte/tsure/docs/ESPECIFICACAO-FUNCIONAL.md)
-- [MODELO-DE-BANCO-DE-DADOS.md](/var/home/notNilton/Workspace/nilbyte/tsure/docs/MODELO-DE-BANCO-DE-DADOS.md)
-- [BACKLOG-TECNICO.md](/var/home/notNilton/Workspace/nilbyte/tsure/docs/BACKLOG-TECNICO.md)
-- [MAPA-DE-TELAS.md](/var/home/notNilton/Workspace/nilbyte/tsure/docs/MAPA-DE-TELAS.md)
-- [API-SPEC.md](/var/home/notNilton/Workspace/nilbyte/tsure/docs/API-SPEC.md)
-- [openapi.yaml](/var/home/notNilton/Workspace/nilbyte/tsure/docs/openapi.yaml)
-- [ERD.md](/var/home/notNilton/Workspace/nilbyte/tsure/docs/ERD.md)
+- [ERP-LEASING.md](ERP-LEASING.md)
+- [ESPECIFICACAO-FUNCIONAL.md](ESPECIFICACAO-FUNCIONAL.md)
+- [MODELO-DE-BANCO-DE-DADOS.md](MODELO-DE-BANCO-DE-DADOS.md)
+- [BACKLOG-TECNICO.md](BACKLOG-TECNICO.md)
+- [MAPA-DE-TELAS.md](MAPA-DE-TELAS.md)
+- [API-SPEC.md](API-SPEC.md)
+- [openapi.yaml](openapi.yaml)
+- [ERD.md](ERD.md)
 
 ## Referencias Visuais
 
