@@ -143,4 +143,11 @@ app/build/
 *.mdb
 *.accdb
 
+# pastas temporários pelo projeto 
 **/*/tmp
+**/*/temp
+
+# arquivos de backup
+*.dump
+*.sql
+*.zip

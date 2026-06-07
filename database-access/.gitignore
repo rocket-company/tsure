@@ -1,3 +1,5 @@
 # Microsoft Access databases
 *.mdb
 *.accdb
+*.sql
+*.dump
