@@ -1,0 +1,36 @@
+# air - hot reload para Go
+# Docs: https://github.com/air-verse/air
+# Instale: go install github.com/air-verse/air@latest
+#
+# Execute da RAIZ do projeto:
+#   air -c apps/web/.air.toml
+# ou via Makefile:
+#   make web
+
+# air observa apenas apps/web/ para nao monitorar o repo todo
+root    = "apps/web"
+tmp_dir = "tmp"
+
+[build]
+  # Compilado e executado da RAIZ do projeto (nao de apps/web) para que
+  # os paths relativos do app (apps/web/templates, etc.) resolvam corretamente.
+  cmd           = "go build -o ./apps/web/tmp/tsure-web.exe ./apps/web"
+  bin           = "apps/web/tmp/tsure-web.exe"
+  full_bin      = "apps/web/tmp/tsure-web.exe"
+  include_ext   = ["go", "html", "tmpl"]
+  exclude_dir   = ["apps/web/tmp", "vendor", "testdata"]
+  delay         = 500
+  kill_delay    = "1s"
+  send_interrupt = true
+
+[log]
+  time = false
+
+[color]
+  main    = "yellow"
+  watcher = "cyan"
+  build   = "green"
+  runner  = "magenta"
+
+[misc]
+  clean_on_exit = true

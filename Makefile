@@ -3,6 +3,7 @@
 #
 # Requisitos no PATH:
 #   - go 1.22+               (apps/web)
+#   - air                    (hot-reload: go install github.com/air-verse/air@latest)
 #   - gradle                 (apps/mobile)
 #   - psql                   (banco)
 #   - sh-compatible shell    (Git Bash, WSL, Linux, macOS)
@@ -14,7 +15,7 @@
 export
 
 # ---- Defaults sobrescritiveis por .env ou linha de comando ------------------
-DATABASE_URL ?= postgres://tsure:tsure@127.0.0.1:5432/tsure?sslmode=disable
+DATABASE_URL ?= postgres://postgres:postgres@127.0.0.1:5432/tsure-dev?sslmode=disable
 ADDR         ?= 127.0.0.1:3456
 TSURE_ENV    ?= dev
 
@@ -22,9 +23,12 @@ TSURE_ENV    ?= dev
 ifeq ($(OS),Windows_NT)
   BIN_EXT := .exe
   RM_RF   := powershell -NoProfile -Command "Remove-Item -Recurse -Force -ErrorAction SilentlyContinue"
+  # air no PATH (instalado com go install github.com/air-verse/air@latest)
+  AIR     := air
 else
   BIN_EXT :=
   RM_RF   := rm -rf
+  AIR     := air
 endif
 
 .DEFAULT_GOAL := help
@@ -48,9 +52,13 @@ dev: db-init web ## Aplica schema+seed e sobe o web
 # Web (Go SSR + HTMX)
 # =============================================================================
 .PHONY: web web-build web-run web-test web-vet web-tidy
-web: web-run ## Alias para web-run
 
-web-run: ## Roda o web em dev (go run)
+# air: hot-reload com graceful shutdown — resolve o terminal travado apos Ctrl+C.
+# Instale: go install github.com/air-verse/air@latest
+web: ## Roda o web com hot-reload (air) — preferir sobre web-run em dev
+	$(AIR) -c apps/web/.air.toml
+
+web-run: ## Roda o web sem hot-reload (go run .) — evite matar com Ctrl+C no Windows
 	cd apps/web && go run .
 
 web-build: ## Compila o binario em bin/tsure-web
@@ -84,14 +92,15 @@ mobile-clean: ## Limpa artefatos do mobile
 # =============================================================================
 # Banco de dados
 # =============================================================================
-.PHONY: db-init db-schema db-seed db-reset db-psql
-db-init: db-schema db-seed ## Aplica schema.sql + seed.sql
+.PHONY: db-init db-schema db-seed db-seed-radelgo db-reset db-psql
+
+db-init: db-schema db-seed-radelgo ## Aplica schema.sql + seed do tenant Radelgo
 
 db-schema: ## Aplica database/schema.sql
 	psql "$(DATABASE_URL)" -v ON_ERROR_STOP=1 -f database/schema.sql
 
-db-seed: ## Aplica database/seed.sql
-	psql "$(DATABASE_URL)" -v ON_ERROR_STOP=1 -f database/seed.sql
+db-seed-radelgo: ## Importa CSVs do primeiro tenant (Radelgo) via seed_radelgo.sql
+	psql "$(DATABASE_URL)" -v ON_ERROR_STOP=1 -f database/seed_radelgo.sql
 
 db-reset: ## DROP schema public e recria (apaga TUDO)
 	psql "$(DATABASE_URL)" -v ON_ERROR_STOP=1 \

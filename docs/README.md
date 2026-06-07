@@ -4,11 +4,6 @@ Documentacao funcional e tecnica do `tsure`, ERP voltado a locacoes, leasing e g
 
 ## Documentos
 
-- [ERP-LEASING.md](ERP-LEASING.md)
-- [ESPECIFICACAO-FUNCIONAL.md](ESPECIFICACAO-FUNCIONAL.md)
-- [MODELO-DE-BANCO-DE-DADOS.md](MODELO-DE-BANCO-DE-DADOS.md)
-- [BACKLOG-TECNICO.md](BACKLOG-TECNICO.md)
-- [MAPA-DE-TELAS.md](MAPA-DE-TELAS.md)
 - [API-SPEC.md](API-SPEC.md)
 - [openapi.yaml](openapi.yaml)
 - [ERD.md](ERD.md)

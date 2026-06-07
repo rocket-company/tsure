@@ -2,6 +2,19 @@
 
 Modelo redesenhado a partir da análise do banco legado Radelgo (`database-access/exports/`). PostgreSQL, UUIDv7 em todos os PKs, auditoria padrão (`created_at`, `updated_at`, `deleted_at`).
 
+## Multi-tenant (white-label)
+
+Cada empresa opera em seu próprio contexto isolado via `tenant_id` em todas as tabelas de negócio.
+
+**Login estilo AWS IAM:** `slug_do_tenant/login_usuario` (ex: `radelgo/admin`).
+- O slug identifica o tenant; o login identifica o usuário dentro daquele tenant.
+- O mesmo login pode existir em tenants diferentes.
+- Autenticação: resolver tenant pelo slug → validar login+senha dentro do tenant.
+
+**Roles de sistema** (`tenant_id IS NULL`): compartilhados entre todos os tenants, gerenciados pelo produto. **Roles custom** (`tenant_id = uuid`): criados por cada tenant para personalizar permissões.
+
+**Números sequenciais por tenant:** `tenant_sequences` + `next_tenant_seq()` geram sequências independentes para `agenda.numero` e `contas_receber.numero_titulo`, evitando colisão entre tenants.
+
 ## Decisões de redesenho
 
 - `TabEscala` + `TabEscalaRet` → **`agenda_equipe`** com `papel` enum (`instalacao` | `retorno`). Elimina duplicação estrutural.
@@ -36,6 +49,53 @@ CREATE TYPE conta_status          AS ENUM ('previsto', 'faturado', 'em_aberto', 
 
 ---
 
+## ERD — Governança Multi-tenant
+
+```mermaid
+erDiagram
+    tenants ||--o{ tenant_sequences : controla
+    tenants ||--o{ roles : possui_roles_custom
+    tenants ||--o{ usuarios : tem
+    tenants ||--o{ clientes : tem
+    tenants ||--o{ funcionarios : tem
+    tenants ||--o{ agenda : tem
+    tenants ||--o{ contas_receber : tem
+    tenants ||--o{ equipamentos : tem
+    tenants ||--o{ veiculos : tem
+    tenants ||--o{ classificacoes_servico : tem
+    tenants ||--o{ servicos_locacao : tem
+
+    tenants {
+        uuid id PK
+        varchar slug UK "identificador IAM ex radelgo"
+        varchar nome
+        varchar dominio "opcional dominio customizado"
+        varchar plano "standard premium enterprise"
+        boolean ativo
+        timestamptz created_at
+        timestamptz updated_at
+        timestamptz deleted_at
+    }
+
+    tenant_sequences {
+        uuid tenant_id PK,FK
+        varchar entidade PK "agenda contas_receber"
+        bigint ultimo_seq
+    }
+
+    roles {
+        uuid id PK
+        uuid tenant_id FK "NULL = role de sistema compartilhado"
+        varchar codigo UK "unico por scope"
+        varchar descricao
+        boolean sistema
+        timestamptz created_at
+        timestamptz updated_at
+    }
+```
+
+---
+
 ## ERD — Núcleo Operacional
 
 ```mermaid
@@ -56,6 +116,7 @@ erDiagram
 
     clientes {
         uuid id PK
+        uuid tenant_id FK
         cliente_tipo tipo
         varchar nome_razao_social
         varchar nome_fantasia
@@ -104,8 +165,9 @@ erDiagram
 
     usuarios {
         uuid id PK
+        uuid tenant_id FK
         uuid funcionario_id FK "nullable"
-        varchar login UK
+        varchar login UK "unico por tenant"
         varchar email UK
         varchar senha_hash
         varchar nome
@@ -140,7 +202,8 @@ erDiagram
 
     agenda {
         uuid id PK
-        bigint numero UK "sequencial"
+        uuid tenant_id FK
+        bigint numero UK "sequencial por tenant"
         uuid cliente_id FK
         uuid usuario_registro_id FK
         uuid usuario_aprovador_id FK
@@ -441,3 +504,6 @@ erDiagram
 | `CadSys`                    | `parametros_sistema`            | Key-value genérico                                       |
 | `FanalOper`                 | dropada                         | Stub vazio no legado                                     |
 | —                           | `logs_auditoria`                | Trilha de auditoria universal (novo)                     |
+| —                           | `tenants`                       | Multi-tenant: cada empresa opera em contexto isolado     |
+| —                           | `tenant_sequences`              | Sequências numéricas independentes por tenant e entidade |
+| —                           | `user_sessions`                 | Sessões web (cookie BFF) e refresh tokens mobile (novo)  |

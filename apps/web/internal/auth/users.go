@@ -54,29 +54,31 @@ func NewStore(pool *pgxpool.Pool) *Store {
 	return &Store{pool: pool}
 }
 
-// Authenticate valida login + senha e devolve o usuario com permissoes
+// Authenticate valida org + login + senha e devolve o usuario com permissoes
 // resolvidas. Retorna ErrInvalidCredentials em qualquer falha de match,
 // para nao vazar se o login existe ou nao.
-func (s *Store) Authenticate(ctx context.Context, login, password string) (User, error) {
+func (s *Store) Authenticate(ctx context.Context, org, login, password string) (User, error) {
+	org = strings.TrimSpace(org)
 	login = strings.TrimSpace(login)
-	if login == "" || password == "" {
+	if org == "" || login == "" || password == "" {
 		return User{}, ErrInvalidCredentials
 	}
 
 	var (
-		id     uuid.UUID
-		email  string
-		nome   string
-		papel  string
-		ativo  bool
-		hash   string
+		id    uuid.UUID
+		email string
+		nome  string
+		papel string
+		ativo bool
+		hash  string
 	)
 	err := s.pool.QueryRow(ctx, `
-		SELECT id, email, nome, papel::text, ativo, senha_hash
-		FROM usuarios
-		WHERE (login = $1 OR email = $1)
-		  AND deleted_at IS NULL
-	`, login).Scan(&id, &email, &nome, &papel, &ativo, &hash)
+		SELECT u.id, u.email, u.nome, u.papel::text, u.ativo, u.senha_hash
+		FROM usuarios u
+		JOIN tenants t ON t.id = u.tenant_id AND t.slug = $1 AND t.ativo = TRUE
+		WHERE (u.login = $2 OR u.email = $2)
+		  AND u.deleted_at IS NULL
+	`, org, login).Scan(&id, &email, &nome, &papel, &ativo, &hash)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return User{}, ErrInvalidCredentials

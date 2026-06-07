@@ -30,6 +30,8 @@ type LoginPageData struct {
 	Title     string
 	Error     string
 	Next      string
+	Org       string
+	Login     string
 	CSRFField template.HTML
 }
 
@@ -40,7 +42,7 @@ func (h AuthHandler) ShowLogin(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, safeNext(r.URL.Query().Get("next")), http.StatusSeeOther)
 		return
 	}
-	h.renderLogin(w, r, "", "")
+	h.renderLogin(w, r, "", "", "", "")
 }
 
 // HandleLogin processa POST /login (form-encoded). Em sucesso, cria a
@@ -50,18 +52,19 @@ func (h AuthHandler) HandleLogin(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "form invalido", http.StatusBadRequest)
 		return
 	}
+	org := strings.TrimSpace(r.FormValue("org"))
 	login := strings.TrimSpace(r.FormValue("login"))
 	password := r.FormValue("password")
 	next := safeNext(r.FormValue("next"))
 
-	user, err := h.Users.Authenticate(r.Context(), login, password)
+	user, err := h.Users.Authenticate(r.Context(), org, login, password)
 	if err != nil {
-		msg := "Login ou senha invalidos."
+		msg := "Organizacao, login ou senha invalidos."
 		if errors.Is(err, auth.ErrUserDisabled) {
 			msg = "Usuario desativado. Procure um administrador."
 		}
 		w.WriteHeader(http.StatusUnauthorized)
-		h.renderLogin(w, r, msg, next)
+		h.renderLogin(w, r, msg, next, org, login)
 		return
 	}
 
@@ -108,6 +111,7 @@ func (h AuthHandler) HandleLogout(w http.ResponseWriter, r *http.Request) {
 // APILogin processa POST /api/auth/login (JSON). Devolve um JWT bearer.
 func (h AuthHandler) APILogin(w http.ResponseWriter, r *http.Request) {
 	var body struct {
+		Org      string `json:"org"`
 		Login    string `json:"login"`
 		Password string `json:"password"`
 	}
@@ -118,7 +122,7 @@ func (h AuthHandler) APILogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := h.Users.Authenticate(r.Context(), body.Login, body.Password)
+	user, err := h.Users.Authenticate(r.Context(), body.Org, body.Login, body.Password)
 	if err != nil {
 		status := http.StatusUnauthorized
 		msg := "credenciais invalidas"
@@ -189,11 +193,13 @@ func (h AuthHandler) APILogout(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (h AuthHandler) renderLogin(w http.ResponseWriter, r *http.Request, errMsg, next string) {
+func (h AuthHandler) renderLogin(w http.ResponseWriter, r *http.Request, errMsg, next, org, login string) {
 	data := LoginPageData{
 		Title:     "Entrar  tsure",
 		Error:     errMsg,
 		Next:      next,
+		Org:       org,
+		Login:     login,
 		CSRFField: middleware.CSRFTemplateTag(r).(template.HTML),
 	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")

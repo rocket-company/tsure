@@ -26,13 +26,32 @@
           <input type="hidden" name="next" value="{{.Next}}" />
 
           <label>
-            <span>Login ou e-mail</span>
-            <input type="text" name="login" required autofocus />
+            <span>Organizacao</span>
+            <input
+              type="text"
+              name="org"
+              value="{{.Org}}"
+              placeholder="ex: radelgo"
+              required
+              autofocus
+              autocomplete="organization"
+            />
+          </label>
+
+          <label>
+            <span>E-mail ou login</span>
+            <input
+              type="text"
+              name="login"
+              value="{{.Login}}"
+              required
+              autocomplete="username"
+            />
           </label>
 
           <label>
             <span>Senha</span>
-            <input type="password" name="password" required />
+            <input type="password" name="password" required autocomplete="current-password" />
           </label>
 
           <button type="submit" class="login-button">Entrar</button>
